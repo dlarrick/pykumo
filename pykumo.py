@@ -9,19 +9,20 @@ import requests
 
 CACHE_INTERVAL_SECONDS = 5
 
-class PyKymo:
+class PyKumo:
     """ Object representing one indoor unit
     """
-    def __init__(self, addr, name, cfg_json):
+    def __init__(self, addr, name, cfg_json_str):
         """ Constructor
         """
+        cfg_json = json.loads(cfg_json_str)
         self._address = addr
         self._name = name
         self._security = {
-            'w_param': bytearray.fromhex(cfg_json["W"]),
-            's_param': cfg_json["S"],
+            'w_param': bytearray.fromhex(cfg_json["w_param"]),
+            's_param': cfg_json["s_param"],
             'password': base64.b64decode(cfg_json["password"]),
-            'crypto_serial': bytearray.fromhex(cfg_json["cryptoSerial"])}
+            'crypto_serial': bytearray.fromhex(cfg_json["crypto_serial"])}
         self._status = {}
         self._last_status_update = time.monotonic() - 2 * CACHE_INTERVAL_SECONDS
         self._update_status()
@@ -48,18 +49,18 @@ class PyKymo:
         return url
 
     def _request(self, post_data):
-        """ Send request to configured unit and return response
+        """ Send request to configured unit and return response dict
         """
         url = self._url(post_data)
         headers = {'Accept': 'application/json, text/plain, */*',
                    'Content-Type': 'application/json'}
         try:
             response = requests.put(url, headers=headers, data=post_data)
-            return response
+            return response.json()
         except Exception as ex:
             print("Error issuing request {url}: {ex}".format(url=url,
                                                              ex=str(ex)))
-        return ""
+        return {}
 
     def _update_status(self):
         """ Retrieve and cache current status dictionary if enough time
@@ -70,7 +71,7 @@ class PyKymo:
                 'mode' not in self._status):
             query = '{"c":{"indoorUnit":{"status":{}}}}'.encode('utf-8')
             response = self._request(query)
-            raw_status = json.loads(response)
+            raw_status = response
             try:
                 self._status = raw_status['r']['indoorUnit']['status']
                 self._last_status_update = now
@@ -149,7 +150,7 @@ class PyKymo:
                    mode).encode('utf-8')
         response = self._request(command)
         self._status['mode'] = mode
-        return response
+        return response.json()
 
     def set_heat_setpoint(self, setpoint):
         """ Change setpoint for heat (in degrees C) """
@@ -157,7 +158,7 @@ class PyKymo:
                    setpoint).encode('utf-8')
         response = self._request(command)
         self._status['spHeat'] = setpoint
-        return response
+        return response.json()
 
     def set_cool_setpoint(self, setpoint):
         """ Change setpoint for cooling (in degrees C) """
@@ -165,7 +166,7 @@ class PyKymo:
                    setpoint).encode('utf-8')
         response = self._request(command)
         self._status['spCool'] = setpoint
-        return response
+        return response.json()
 
     def set_fan_speed(self, speed):
         """ Change fan speed. Valid speeds: quiet, low, powerful,
@@ -178,7 +179,7 @@ class PyKymo:
                    % speed).encode('utf-8')
         response = self._request(command)
         self._status['fanSpeed'] = speed
-        return response
+        return response.json()
 
     def set_vane_direction(self, direction):
         """ Change vane direction. Valid directions: horizontal, midhorizontal,
@@ -192,4 +193,4 @@ class PyKymo:
                    % direction).encode('utf-8')
         response = self._request(command)
         self._status['vaneDir'] = direction
-        return response
+        return response.json()
