@@ -12,7 +12,7 @@ CACHE_INTERVAL_SECONDS = 5
 class PyKumo:
     """ Object representing one indoor unit
     """
-    def __init__(self, addr, name, cfg_json_str):
+    def __init__(self, name, addr, cfg_json_str):
         """ Constructor
         """
         cfg_json = json.loads(cfg_json_str)
@@ -27,7 +27,7 @@ class PyKumo:
         self._last_status_update = time.monotonic() - 2 * CACHE_INTERVAL_SECONDS
         self._update_status()
 
-    def _url(self, post_data):
+    def _token(self, post_data):
         """ Compute URL including security token for a given command
         """
         data_hash = hashlib.sha256(self._security['password'] +
@@ -44,18 +44,18 @@ class PyKumo:
 
         token = hashlib.sha256(intermediate).hexdigest()
 
-        url = "http://" + self._address + "/api?m=" + token
-
-        return url
+        return token
 
     def _request(self, post_data):
         """ Send request to configured unit and return response dict
         """
-        url = self._url(post_data)
+        url = "http://" + self._address + "/api"
+        token = self._token(post_data)
         headers = {'Accept': 'application/json, text/plain, */*',
                    'Content-Type': 'application/json'}
+        token_param = {'m': token}
         try:
-            response = requests.put(url, headers=headers, data=post_data)
+            response = requests.put(url, headers=headers, data=post_data, params=token_param)
             return response.json()
         except Exception as ex:
             print("Error issuing request {url}: {ex}".format(url=url,
@@ -145,28 +145,28 @@ class PyKumo:
         """
         if mode not in ["off", "heat", "cool", "dry", "vent", "auto"]:
             print("Attempting to set invalid mode %s" % mode)
-            return ""
-        command = ('"c": { "indoorUnit": { "status": { "mode": "%s" } } } }' %
+            return {}
+        command = ('{"c":{"indoorUnit":{"status":{"mode":"%s"}}}}' %
                    mode).encode('utf-8')
         response = self._request(command)
         self._status['mode'] = mode
-        return response.json()
+        return response
 
     def set_heat_setpoint(self, setpoint):
         """ Change setpoint for heat (in degrees C) """
-        command = ('"c": { "indoorUnit": { "status": { "spHeat": %f } } } }' %
+        command = ('{"c": { "indoorUnit": { "status": { "spHeat": %f } } } }' %
                    setpoint).encode('utf-8')
         response = self._request(command)
         self._status['spHeat'] = setpoint
-        return response.json()
+        return response
 
     def set_cool_setpoint(self, setpoint):
         """ Change setpoint for cooling (in degrees C) """
-        command = ('"c": { "indoorUnit": { "status": { "spCool": %f } } } }' %
+        command = ('{"c": { "indoorUnit": { "status": { "spCool": %f } } } }' %
                    setpoint).encode('utf-8')
         response = self._request(command)
         self._status['spCool'] = setpoint
-        return response.json()
+        return response
 
     def set_fan_speed(self, speed):
         """ Change fan speed. Valid speeds: quiet, low, powerful,
@@ -174,12 +174,12 @@ class PyKumo:
         """
         if speed not in ["quiet", "low", "powerful", "superPowerful", "auto"]:
             print("Attempting to set invalid fan speed %s" % speed)
-            return ""
-        command = ('"c": { "indoorUnit": { "status": { "fanSpeed": "%s" } } } }'
+            return {}
+        command = ('{"c": { "indoorUnit": { "status": { "fanSpeed": "%s" } } } }'
                    % speed).encode('utf-8')
         response = self._request(command)
         self._status['fanSpeed'] = speed
-        return response.json()
+        return response
 
     def set_vane_direction(self, direction):
         """ Change vane direction. Valid directions: horizontal, midhorizontal,
@@ -188,9 +188,9 @@ class PyKumo:
         if direction not in ["horizontal", "midhorizontal", "midpoint",
                              "midvertical", "swing", "auto"]:
             print("Attempting to set an invalid vane direction %s" % direction)
-            return ""
-        command = ('"c": { "indoorUnit": { "status": { "vaneDir": "%s" } } } }'
+            return {}
+        command = ('{"c": { "indoorUnit": { "status": { "vaneDir": "%s" } } } }'
                    % direction).encode('utf-8')
         response = self._request(command)
         self._status['vaneDir'] = direction
-        return response.json()
+        return response
