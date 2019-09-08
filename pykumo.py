@@ -24,6 +24,7 @@ class PyKumo:
             'password': base64.b64decode(cfg_json["password"]),
             'crypto_serial': bytearray.fromhex(cfg_json["crypto_serial"])}
         self._status = {}
+        self._sensors = []
         self._last_status_update = time.monotonic() - 2 * CACHE_INTERVAL_SECONDS
         self._update_status()
 
@@ -77,6 +78,16 @@ class PyKumo:
                 self._last_status_update = now
             except KeyError:
                 print("Error retrieving status")
+            query = '{"c":{"sensors":{}}}'.encode('utf-8')
+            response = self._request(query)
+            sensors = response
+            try:
+                self._sensors = []
+                for sensor in sensors['r']['sensors'].values():
+                    if isinstance(sensor, dict) and sensor['uuid']:
+                        self._sensors.append(sensor)
+            except KeyError:
+                print("Error retrieving sensors")
 
     def get_name(self):
         """ Unit's name """
@@ -92,7 +103,7 @@ class PyKumo:
         try:
             val = self._status['mode']
         except KeyError:
-            val = "error"
+            val = None
         return val
 
     def get_heat_setpoint(self):
@@ -101,7 +112,7 @@ class PyKumo:
         try:
             val = self._status['spHeat']
         except KeyError:
-            val = 0
+            val = None
         return val
 
     def get_cool_setpoint(self):
@@ -110,7 +121,7 @@ class PyKumo:
         try:
             val = self._status['spCool']
         except KeyError:
-            val = 0
+            val = None
         return val
 
     def get_current_temperature(self):
@@ -119,7 +130,7 @@ class PyKumo:
         try:
             val = self._status['roomTemp']
         except KeyError:
-            val = 0
+            val = None
         return val
 
     def get_fan_speed(self):
@@ -128,7 +139,7 @@ class PyKumo:
         try:
             val = self._status['fanSpeed']
         except KeyError:
-            val = "error"
+            val = None
         return val
 
     def get_vane_direction(self):
@@ -137,7 +148,31 @@ class PyKumo:
         try:
             val = self._status['vaneDir']
         except KeyError:
-            val = "error"
+            val = None
+        return val
+
+    def get_current_humidity(self):
+        """ Last retrieved humidity from sensor, if any """
+        self._update_status()
+        val = None
+        try:
+            for sensor in self._sensors:
+                if sensor['humidity'] is not None:
+                    return sensor['humidity']
+        except KeyError:
+            val = None
+        return val
+
+    def get_sensor_battery(self):
+        """ Last retrieved battery percentage from sensor, if any """
+        self._update_status()
+        val = None
+        try:
+            for sensor in self._sensors:
+                if sensor['battery'] is not None:
+                    return sensor['battery']
+        except KeyError:
+            val = None
         return val
 
     def set_mode(self, mode):
@@ -154,6 +189,7 @@ class PyKumo:
 
     def set_heat_setpoint(self, setpoint):
         """ Change setpoint for heat (in degrees C) """
+        setpoint = round(float(setpoint), 2)
         command = ('{"c": { "indoorUnit": { "status": { "spHeat": %f } } } }' %
                    setpoint).encode('utf-8')
         response = self._request(command)
@@ -162,6 +198,7 @@ class PyKumo:
 
     def set_cool_setpoint(self, setpoint):
         """ Change setpoint for cooling (in degrees C) """
+        setpoint = round(float(setpoint), 2)
         command = ('{"c": { "indoorUnit": { "status": { "spCool": %f } } } }' %
                    setpoint).encode('utf-8')
         response = self._request(command)
