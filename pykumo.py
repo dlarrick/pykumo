@@ -8,6 +8,8 @@ import json
 import requests
 
 CACHE_INTERVAL_SECONDS = 5
+W_PARAM = bytearray.fromhex('44c73283b498d432ff25f5c8e06a016aef931e68f0a00ea710e36e6338fb22db')
+S_PARAM = 0
 
 class PyKumo:
     """ Object representing one indoor unit
@@ -19,8 +21,6 @@ class PyKumo:
         self._address = addr
         self._name = name
         self._security = {
-            'w_param': bytearray.fromhex(cfg_json["w_param"]),
-            's_param': cfg_json["s_param"],
             'password': base64.b64decode(cfg_json["password"]),
             'crypto_serial': bytearray.fromhex(cfg_json["crypto_serial"])}
         self._status = {}
@@ -34,10 +34,10 @@ class PyKumo:
                                    post_data).digest()
 
         intermediate = bytearray(88)
-        intermediate[0:32] = self._security['w_param'][0:32]
+        intermediate[0:32] = W_PARAM[0:32]
         intermediate[32:64] = data_hash[0:32]
         intermediate[64:66] = bytearray.fromhex("0840")
-        intermediate[66] = self._security['s_param']
+        intermediate[66] = S_PARAM
         intermediate[79] = self._security['crypto_serial'][8]
         intermediate[80:84] = self._security['crypto_serial'][4:8]
         intermediate[84:88] = self._security['crypto_serial'][0:4]
