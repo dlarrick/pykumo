@@ -189,7 +189,7 @@ class PyKumo:
 
     def set_heat_setpoint(self, setpoint):
         """ Change setpoint for heat (in degrees C) """
-        setpoint = round(float(setpoint), 2)
+        setpoint = round(float(setpoint), 1)
         command = ('{"c": { "indoorUnit": { "status": { "spHeat": %f } } } }' %
                    setpoint).encode('utf-8')
         response = self._request(command)
