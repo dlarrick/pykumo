@@ -4,7 +4,6 @@
 import hashlib
 import base64
 import time
-import json
 import requests
 
 CACHE_INTERVAL_SECONDS = 5
@@ -12,12 +11,11 @@ W_PARAM = bytearray.fromhex('44c73283b498d432ff25f5c8e06a016aef931e68f0a00ea710e
 S_PARAM = 0
 
 class PyKumo:
-    """ Object representing one indoor unit
+    """ Talk to and control one indoor unit.
     """
-    def __init__(self, name, addr, cfg_json_str):
+    def __init__(self, name, addr, cfg_json):
         """ Constructor
         """
-        cfg_json = json.loads(cfg_json_str)
         self._address = addr
         self._name = name
         self._security = {
@@ -231,3 +229,79 @@ class PyKumo:
         response = self._request(command)
         self._status['vaneDir'] = direction
         return response
+
+class KumoCloudAccount:
+    """ API to talk to KumoCloud servers
+    """
+    def __init__(self, username, password):
+        """ Constructor
+        """
+        self._url = "https://geo-c.kumocloud.com/login"
+
+        self._kumo_dict = None
+        self._last_status_update = time.monotonic() - 2 * CACHE_INTERVAL_SECONDS
+        self._username = username
+        self._password = password
+
+    def _fetch_if_needed(self):
+        """ Fetch configuration from server.
+        """
+        now = time.monotonic()
+        if (now - self._last_status_update > CACHE_INTERVAL_SECONDS or
+                not self._kumo_dict):
+            headers = {'Accept': 'application/json, text/plain, */*',
+                       'Accept-Encoding': 'gzip, deflate, br',
+                       'Accept-Language': 'en-US,en',
+                       'Content-Type': 'application/json'}
+            body = ('{"username":"%s","password":"%s","appVersion":"2.2.0"}' %
+                    (self._username, self._password))
+            response = requests.post(self._url, headers=headers, data=body)
+            self._kumo_dict = response.json()
+            self._last_status_update = now
+
+    def get_raw_json(self):
+        """Return raw dict retrieved from KumoCloud"""
+        return self._kumo_dict
+
+    def get_indoor_units(self):
+        """ Return list of indoor unit names
+        """
+        self._fetch_if_needed()
+        units = []
+        try:
+            for child in self._kumo_dict[2]['children']:
+                for zone in child['zoneTable'].values():
+                    units.append(zone['label'])
+        except KeyError:
+            pass
+        return units
+
+    def get_address(self, unit):
+        """ Return IP address of named unit
+        """
+        self._fetch_if_needed()
+        try:
+            for child in self._kumo_dict[2]['children']:
+                for zone in child['zoneTable'].values():
+                    if zone['label'] == unit:
+                        return zone['address']
+        except KeyError:
+            pass
+
+        return None
+
+    def get_credentials(self, unit):
+        """ Return dict of credentials required to talk to unit
+        """
+        self._fetch_if_needed()
+        try:
+            for child in self._kumo_dict[2]['children']:
+                for zone in child['zoneTable'].values():
+                    if zone['label'] == unit:
+                        credentials = {'password': zone['password'],
+                                       'crypto_serial': zone['cryptoSerial']}
+                        return credentials
+        except KeyError:
+            pass
+
+        return None
