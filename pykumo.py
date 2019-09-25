@@ -22,6 +22,7 @@ class PyKumo:
             'password': base64.b64decode(cfg_json["password"]),
             'crypto_serial': bytearray.fromhex(cfg_json["crypto_serial"])}
         self._status = {}
+        self._profile = {}
         self._sensors = []
         self._last_status_update = time.monotonic() - 2 * CACHE_INTERVAL_SECONDS
         self._update_status()
@@ -76,6 +77,7 @@ class PyKumo:
                 self._last_status_update = now
             except KeyError:
                 print("Error retrieving status")
+
             query = '{"c":{"sensors":{}}}'.encode('utf-8')
             response = self._request(query)
             sensors = response
@@ -86,6 +88,27 @@ class PyKumo:
                         self._sensors.append(sensor)
             except KeyError:
                 print("Error retrieving sensors")
+
+            query = '{"c":{"indoorUnit":{"profile":{}}}}'.encode('utf-8')
+            response = self._request(query)
+            try:
+                self._profile = response['r']['indoorUnit']['profile']
+            except KeyError:
+                print("Error retrieving profile")
+
+            # Edit profile with settings from adapter
+            query = '{"c":{"adapter":{"status":{}}}}'.encode('utf-8')
+            response = self._request(query)
+            try:
+                status = response['r']['adapter']['status']
+                self._profile['hasModeAuto'] = not status.get(
+                    'autoModePrevention', False)
+                if not status.get('userHasModeDry', False):
+                    self._profile['hasModeDry'] = False
+                if not status.get('userHasModeHeat', False):
+                    self._profile['hasModeHeat'] = False
+            except KeyError:
+                print("Error retrieving adapter profile")
 
     def get_name(self):
         """ Unit's name """
@@ -173,12 +196,62 @@ class PyKumo:
             val = None
         return val
 
+    def has_dry_mode(self):
+        """ True if unit has dry (dehumidify) mode """
+        self._update_status()
+        val = None
+        try:
+            val = self._profile['hasModeDry']
+        except KeyError:
+            val = False
+        return val
+
+    def has_heat_mode(self):
+        """ True if unit has heat mode """
+        self._update_status()
+        val = None
+        try:
+            val = self._profile['hasModeHeat']
+        except KeyError:
+            val = False
+        return val
+
+    def has_vent_mode(self):
+        """ True if unit has vent (fan) mode """
+        self._update_status()
+        val = None
+        try:
+            val = self._profile['hasModeVent']
+        except KeyError:
+            val = False
+        return val
+
+    def has_auto_mode(self):
+        """ True if unit has auto (heat/cool) mode """
+        self._update_status()
+        val = None
+        try:
+            val = self._profile['hasModeAuto']
+        except KeyError:
+            val = False
+        return val
+
     def set_mode(self, mode):
         """ Change operation mode. Valid modes: off, heat, cool, dry, vent, auto
         """
-        if mode not in ["off", "heat", "cool", "dry", "vent", "auto"]:
+        modes = ["off", "cool"]
+        if self.has_dry_mode():
+            modes.append("dry")
+        if self.has_heat_mode():
+            modes.append("heat")
+        if self.has_vent_mode():
+            modes.append("vent")
+        if self.has_auto_mode():
+            modes.append("auto")
+        if mode not in modes:
             print("Attempting to set invalid mode %s" % mode)
             return {}
+
         command = ('{"c":{"indoorUnit":{"status":{"mode":"%s"}}}}' %
                    mode).encode('utf-8')
         response = self._request(command)
@@ -187,6 +260,7 @@ class PyKumo:
 
     def set_heat_setpoint(self, setpoint):
         """ Change setpoint for heat (in degrees C) """
+        # TODO: honor min/max from profile
         setpoint = round(float(setpoint), 1)
         command = ('{"c": { "indoorUnit": { "status": { "spHeat": %f } } } }' %
                    setpoint).encode('utf-8')
@@ -196,6 +270,7 @@ class PyKumo:
 
     def set_cool_setpoint(self, setpoint):
         """ Change setpoint for cooling (in degrees C) """
+        # TODO: honor min/max from profile
         setpoint = round(float(setpoint), 2)
         command = ('{"c": { "indoorUnit": { "status": { "spCool": %f } } } }' %
                    setpoint).encode('utf-8')
@@ -207,6 +282,7 @@ class PyKumo:
         """ Change fan speed. Valid speeds: quiet, low, powerful,
             superPowerful, auto
         """
+        # TODO: honor hasFanSpeedAuto and numberOfFanSpeeds from profile
         if speed not in ["quiet", "low", "powerful", "superPowerful", "auto"]:
             print("Attempting to set invalid fan speed %s" % speed)
             return {}
@@ -256,8 +332,12 @@ class KumoCloudAccount:
             body = ('{"username":"%s","password":"%s","appVersion":"2.2.0"}' %
                     (self._username, self._password))
             response = requests.post(self._url, headers=headers, data=body)
-            self._kumo_dict = response.json()
-            self._last_status_update = now
+            if response.ok:
+                self._kumo_dict = response.json()
+                self._last_status_update = now
+            else:
+                print("Error response from KumoCloud: {code} {msg}".format(
+                    code=response.status_code, msg=response.text))
 
     def get_raw_json(self):
         """Return raw dict retrieved from KumoCloud"""
