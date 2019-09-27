@@ -127,6 +127,15 @@ class PyKumo:
             val = None
         return val
 
+    def get_standby(self):
+        """ Return if the unit is in standby """
+        self._update_status()
+        try:
+            val = self._status['standby']
+        except KeyError:
+            val = None
+        return val
+
     def get_heat_setpoint(self):
         """ Last retrieved heat setpoint from unit """
         self._update_status()
