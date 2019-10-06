@@ -352,15 +352,29 @@ class KumoCloudAccount:
         """Return raw dict retrieved from KumoCloud"""
         return self._kumo_dict
 
+    def _get_raw_zones(self, from_payload=None):
+
+        self._fetch_if_needed()
+        payload = from_payload if from_payload is not None else self._kumo_dict[2]
+        if payload is None:
+            return []
+
+        return_units = []
+        for zone in payload['zoneTable'].values():
+            return_units.append(zone)
+        for child in payload['children']:
+            return_units = return_units + self._get_raw_zones(from_payload=child)
+
+        return return_units
+
+
     def get_indoor_units(self):
         """ Return list of indoor unit names
         """
-        self._fetch_if_needed()
         units = []
         try:
-            for child in self._kumo_dict[2]['children']:
-                for zone in child['zoneTable'].values():
-                    units.append(zone['label'])
+            for zone in self._get_raw_zones():
+                units.append(zone['label'])
         except KeyError:
             pass
         return units
@@ -368,12 +382,10 @@ class KumoCloudAccount:
     def get_address(self, unit):
         """ Return IP address of named unit
         """
-        self._fetch_if_needed()
         try:
-            for child in self._kumo_dict[2]['children']:
-                for zone in child['zoneTable'].values():
-                    if zone['label'] == unit:
-                        return zone['address']
+            for zone in self._get_raw_zones():
+                if zone['label'] == unit:
+                    return zone['address']
         except KeyError:
             pass
 
@@ -382,14 +394,12 @@ class KumoCloudAccount:
     def get_credentials(self, unit):
         """ Return dict of credentials required to talk to unit
         """
-        self._fetch_if_needed()
         try:
-            for child in self._kumo_dict[2]['children']:
-                for zone in child['zoneTable'].values():
-                    if zone['label'] == unit:
-                        credentials = {'password': zone['password'],
+            for zone in self._get_raw_zones():
+                if zone['label'] == unit:
+                    credentials = {'password': zone['password'],
                                        'crypto_serial': zone['cryptoSerial']}
-                        return credentials
+                    return credentials
         except KeyError:
             pass
 
