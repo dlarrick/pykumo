@@ -1,0 +1,1914 @@
+[
+  {
+    "token": "some-token-0",
+    "username": "me@example.com",
+    "device": null
+  },
+  {
+    "lastUpdate": 1548787837243,
+    "sendAnalytics": 1
+  },
+  {
+    "lastScheduleChange": 0,
+    "zoneTable": null,
+    "children": [
+      {
+        "lastScheduleChange": 0,
+        "zoneTable": {
+          "7Serial1F": {
+            "serial": "7Serial1F",
+            "mac": "aa:bb:cc:dd:ee:ff",
+            "label": "Master BR",
+            "port": "80",
+            "_isNew": true,
+            "unitType": "ductless",
+            "reportedCondition": {
+              "more": {
+                "operation_mode_text": "Cool",
+                "fan_speed_text": "Auto",
+                "air_direction_text": "Auto",
+                "power_on": true
+              },
+              "_created": 1562928600775,
+              "id": "2253994581449675",
+              "record_time": "2019-07-12T10:49:53.541Z",
+              "device_serial": "7Serial1F",
+              "it_status": null,
+              "rssi": -38,
+              "power": 1,
+              "operation_mode": 3,
+              "set_temp": null,
+              "set_temp_a": null,
+              "fan_speed": 0,
+              "air_direction": 0,
+              "prohibit_local_remote_control": null,
+              "room_temp": 22.5,
+              "room_temp_beyond": null,
+              "room_temp_a": null,
+              "out_of_use": null,
+              "unusual_figures": 32768,
+              "two_figures_code": "A0",
+              "status_display": {
+                "filter": false,
+                "defrost": false,
+                "hot_adjust": false,
+                "standby": false
+              },
+              "actual_fan_speed": null,
+              "sp_cool": 23,
+              "sp_heat": 20,
+              "sp_auto": -1,
+              "raw_frames": null,
+              "run_test": 0,
+              "active_thermistor": null,
+              "temp_source": null,
+              "seconds_since_contact": 8,
+              "lastAdapterUpdated": "2019-07-12T10:50:00.775Z"
+            },
+            "desiredConditionStack": [],
+            "lastUpdate": 1562928638033,
+            "_requestRescan": 0,
+            "_isRespondingLocally": true,
+            "overrideSettings": {
+              "dryMode": true,
+              "heatMode": true,
+              "ledDisabled": false
+            },
+            "forceCloudUpdates": false,
+            "errorHandler": {
+              "1": {
+                "error2char": "A0",
+                "error4char": "8000",
+                "timestamp": 1562721450,
+                "code": "8000",
+                "text": "8000"
+              }
+            },
+            "equipmentControllerSettings": null,
+            "eqcStageThreeBacksupChannels": {
+              "1": 0,
+              "2": 0,
+              "3": 0,
+              "4": 0
+            },
+            "eqcUpdatedLocally": {
+              "1": false,
+              "2": false,
+              "3": false,
+              "4": false
+            },
+            "systemChangeoverSettings": {
+              "masterZone": {
+                "minRuntime": 20,
+                "maxStandby": 180,
+                "disable": "notset",
+                "activeMode": "__ungettable",
+                "durActive": "__ungettable",
+                "durInactive": "__ungettable"
+              },
+              "priority": 1
+            },
+            "programEventSettings": {
+              "1": {
+                "active": false,
+                "inUse": true,
+                "day": "SuMoTuWeThFrSa",
+                "time": "2130",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": 16.5,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:47:14.730Z"
+              },
+              "2": {
+                "active": false,
+                "inUse": true,
+                "day": "SuMoTuWeThFrSa",
+                "time": "0600",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": 20,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:47:14.730Z"
+              },
+              "3": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:47:14.730Z"
+              },
+              "4": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:47:14.730Z"
+              },
+              "5": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:47:14.730Z"
+              },
+              "6": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:47:14.730Z"
+              },
+              "7": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:47:14.730Z"
+              },
+              "8": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:47:14.330Z"
+              },
+              "9": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:47:14.331Z"
+              },
+              "10": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:47:14.331Z"
+              },
+              "11": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:47:14.331Z"
+              },
+              "12": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:47:14.331Z"
+              },
+              "13": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:47:14.331Z"
+              },
+              "14": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:47:14.331Z"
+              },
+              "15": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:47:13.936Z"
+              },
+              "16": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:47:13.936Z"
+              },
+              "17": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:47:13.936Z"
+              },
+              "18": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:47:13.936Z"
+              },
+              "19": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:47:13.936Z"
+              },
+              "20": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:47:13.936Z"
+              },
+              "21": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:47:13.936Z"
+              },
+              "22": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:47:13.456Z"
+              },
+              "23": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:47:13.456Z"
+              },
+              "24": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:47:13.456Z"
+              },
+              "25": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:47:13.456Z"
+              },
+              "26": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:47:13.456Z"
+              },
+              "27": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:47:13.456Z"
+              },
+              "28": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:47:13.456Z"
+              }
+            },
+            "hasElectricHeatingOption": false,
+            "rssi": {
+              "rssi": -50,
+              "string": "Very strong",
+              "image": "images/signal-verystrong-ondark-50x50.svg"
+            },
+            "ledDisabled": false,
+            "cryptoSerial": "crypto-serial-1",
+            "cryptoKeySet": "F",
+            "address": "192.168.1.112",
+            "reportedInitialSettings": {
+              "assigned_settings": null,
+              "restart_after_outage": 0,
+              "vent_air": 0,
+              "voltage": 0,
+              "energy_save": 0,
+              "filter_alerts": 0,
+              "auto_fan": 0,
+              "pla_outlets": 0,
+              "filter_type": 0,
+              "frost_temp": 0,
+              "defrost": 0,
+              "oscillate": 0,
+              "heating_offset": 0,
+              "thermal_off1": 0,
+              "thermal_off2": 0,
+              "pressure1": 0,
+              "pressure2": 0,
+              "electric_heater1": 0,
+              "electric_heater2": 0,
+              "humidifier": 0,
+              "humidifier_modifier": 0,
+              "leftovers_settings": {
+                "2": 0,
+                "6": 0,
+                "12": 0,
+                "14": 0,
+                "18": 0,
+                "19": 0,
+                "20": 0,
+                "21": 0,
+                "22": 0,
+                "26": 0,
+                "28": 0,
+                "29": 0,
+                "30": 0,
+                "31": 0
+              }
+            },
+            "password": "some-password-1",
+            "sendDesiredConditionsPending": false,
+            "sendDesiredConditionsTime": "2019-03-24T20:42:00.815Z",
+            "autoModeEnabled": false,
+            "lastAdapterUpdate": "2019-07-12 10:48:52.144714",
+            "systemChangeoverEnabled": false,
+            "kumoSensorSettings": null,
+            "reportedProfile": {
+              "fan_speed_stages": 5,
+              "has_air_direction": true,
+              "has_auto_fan_speed": true,
+              "has_dry_function": true,
+              "has_extended_temp_range": true,
+              "has_heat_function": true,
+              "has_swing_direction": true,
+              "has_test_run": false,
+              "has_unit_function_setting": false,
+              "has_ventilation_function": true,
+              "maximum_auto_temp": 31,
+              "maximum_cool_or_dry_temp": 31,
+              "maximum_heat_temp": 31,
+              "minimum_auto_temp": 16,
+              "minimum_cool_or_dry_temp": 16,
+              "minimum_heat_temp": 10
+            },
+            "firmwareVersion": "00.04.21",
+            "roomTempOffset": 0,
+            "minCoolSetpoint": 16,
+            "maxHeatSetpoint": 31,
+            "$$hashKey": "object:212",
+            "success": [],
+            "token": "some-token-1",
+            "optimalStart": false
+          },
+          "8SerialF": {
+            "serial": "8SerialF",
+            "mac": "a0:c9:a0:65:69:ef",
+            "label": "Loft",
+            "port": "80",
+            "_isNew": true,
+            "unitType": "ductless",
+            "reportedCondition": {
+              "more": {
+                "fan_speed_text": "Auto",
+                "air_direction_text": "Auto",
+                "power_on": false
+              },
+              "_created": 1562928600775,
+              "id": "2252109077108681",
+              "record_time": "2019-07-12T10:49:58.744Z",
+              "device_serial": "8SerialF",
+              "it_status": null,
+              "rssi": -34,
+              "power": 0,
+              "operation_mode": 16,
+              "set_temp": null,
+              "set_temp_a": null,
+              "fan_speed": 0,
+              "air_direction": 0,
+              "prohibit_local_remote_control": null,
+              "room_temp": 26.5,
+              "room_temp_beyond": null,
+              "room_temp_a": null,
+              "out_of_use": null,
+              "unusual_figures": 32768,
+              "two_figures_code": "A0",
+              "status_display": {
+                "filter": false,
+                "defrost": false,
+                "hot_adjust": false,
+                "standby": false
+              },
+              "actual_fan_speed": null,
+              "sp_cool": 23.5,
+              "sp_heat": 19,
+              "sp_auto": -1,
+              "raw_frames": null,
+              "run_test": 0,
+              "active_thermistor": null,
+              "temp_source": null,
+              "seconds_since_contact": 3,
+              "lastAdapterUpdated": "2019-07-12T10:50:00.775Z"
+            },
+            "desiredConditionStack": [
+              {
+                "more": null,
+                "_created": 1562928491940,
+                "sensors": {
+                  "0": {
+                    "uuid": "6b736265285dc488e1feeb3b3d6b805d"
+                  }
+                },
+                "indoorUnit": {
+                  "status": {
+                    "tempSource": "sensor0"
+                  }
+                },
+                "sent": 1562928494356,
+                "cloudCommandId": "8",
+                "resolvedLocally": true
+              }
+            ],
+            "lastUpdate": 1562928638035,
+            "_requestRescan": 0,
+            "_isRespondingLocally": true,
+            "overrideSettings": {
+              "dryMode": true,
+              "heatMode": true,
+              "ledDisabled": false
+            },
+            "forceCloudUpdates": false,
+            "errorHandler": {
+              "1": {
+                "error2char": "A0",
+                "error4char": "8000",
+                "timestamp": 1562536378,
+                "code": "8000",
+                "text": "8000"
+              }
+            },
+            "equipmentControllerSettings": null,
+            "eqcStageThreeBacksupChannels": {
+              "1": 0,
+              "2": 0,
+              "3": 0,
+              "4": 0
+            },
+            "eqcUpdatedLocally": {
+              "1": false,
+              "2": false,
+              "3": false,
+              "4": false
+            },
+            "systemChangeoverSettings": {
+              "masterZone": {
+                "minRuntime": 20,
+                "maxStandby": 180,
+                "disable": "notset",
+                "activeMode": "__ungettable",
+                "durActive": "__ungettable",
+                "durInactive": "__ungettable"
+              },
+              "priority": 1
+            },
+            "programEventSettings": {
+              "1": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:47:14.213Z"
+              },
+              "2": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:47:14.213Z"
+              },
+              "3": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:47:14.213Z"
+              },
+              "4": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:47:14.214Z"
+              },
+              "5": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:47:14.214Z"
+              },
+              "6": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:47:14.214Z"
+              },
+              "7": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:47:14.214Z"
+              },
+              "8": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:47:13.762Z"
+              },
+              "9": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:47:13.762Z"
+              },
+              "10": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:47:13.762Z"
+              },
+              "11": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:47:13.762Z"
+              },
+              "12": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:47:13.762Z"
+              },
+              "13": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:47:13.762Z"
+              },
+              "14": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:47:13.762Z"
+              },
+              "15": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:47:13.396Z"
+              },
+              "16": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:47:13.396Z"
+              },
+              "17": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:47:13.396Z"
+              },
+              "18": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:47:13.396Z"
+              },
+              "19": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:47:13.396Z"
+              },
+              "20": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:47:13.396Z"
+              },
+              "21": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:47:13.397Z"
+              },
+              "22": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:47:13.044Z"
+              },
+              "23": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:47:13.048Z"
+              },
+              "24": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:47:13.048Z"
+              },
+              "25": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:47:13.048Z"
+              },
+              "26": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:47:13.048Z"
+              },
+              "27": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:47:13.048Z"
+              },
+              "28": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:47:13.050Z"
+              }
+            },
+            "hasElectricHeatingOption": false,
+            "rssi": {
+              "rssi": -33,
+              "string": "Very strong",
+              "image": "images/signal-verystrong-ondark-50x50.svg"
+            },
+            "ledDisabled": false,
+            "cryptoSerial": "crypto-serial-2",
+            "cryptoKeySet": "F",
+            "address": "192.168.1.113",
+            "reportedInitialSettings": {
+              "assigned_settings": null,
+              "restart_after_outage": 0,
+              "vent_air": 0,
+              "voltage": 0,
+              "energy_save": 0,
+              "filter_alerts": 0,
+              "auto_fan": 0,
+              "pla_outlets": 0,
+              "filter_type": 0,
+              "frost_temp": 0,
+              "defrost": 0,
+              "oscillate": 0,
+              "heating_offset": 0,
+              "thermal_off1": 0,
+              "thermal_off2": 0,
+              "pressure1": 0,
+              "pressure2": 0,
+              "electric_heater1": 0,
+              "electric_heater2": 0,
+              "humidifier": 0,
+              "humidifier_modifier": 0,
+              "leftovers_settings": {
+                "2": 0,
+                "6": 0,
+                "12": 0,
+                "14": 0,
+                "18": 0,
+                "19": 0,
+                "20": 0,
+                "21": 0,
+                "22": 0,
+                "26": 0,
+                "28": 0,
+                "29": 0,
+                "30": 0,
+                "31": 0
+              }
+            },
+            "password": "some-password-2",
+            "sendDesiredConditionsPending": true,
+            "sendDesiredConditionsTime": "2019-07-12T10:48:11.940Z",
+            "lastAdapterUpdate": "2019-07-12 10:49:57.411765",
+            "autoModeEnabled": true,
+            "systemChangeoverEnabled": false,
+            "kumoSensorSettings": {
+              "uuid": "6b736265285dc488e1feeb3b3d6b805d",
+              "rssi": -53,
+              "txPower": -53,
+              "battery": 95,
+              "temperature": 26.080664,
+              "humidity": 69.195312
+            },
+            "reportedProfile": {
+              "fan_speed_stages": 5,
+              "has_air_direction": true,
+              "has_auto_fan_speed": true,
+              "has_dry_function": true,
+              "has_extended_temp_range": true,
+              "has_heat_function": true,
+              "has_swing_direction": true,
+              "has_test_run": false,
+              "has_unit_function_setting": false,
+              "has_ventilation_function": true,
+              "maximum_auto_temp": 31,
+              "maximum_cool_or_dry_temp": 31,
+              "maximum_heat_temp": 31,
+              "minimum_auto_temp": 16,
+              "minimum_cool_or_dry_temp": 16,
+              "minimum_heat_temp": 10
+            },
+            "firmwareVersion": "00.04.21",
+            "roomTempOffset": 0,
+            "minCoolSetpoint": 16,
+            "maxHeatSetpoint": 31,
+            "$$hashKey": "object:211",
+            "success": [],
+            "token": "some-token-2",
+            "optimalStart": false
+          },
+          "9SerialF": {
+            "serial": "9SerialF",
+            "mac": "44:91:60:07:27:c2",
+            "label": "First Floor",
+            "port": "80",
+            "_isNew": true,
+            "unitType": "ductless",
+            "reportedCondition": {
+              "more": {
+                "power_on": true,
+                "operation_mode_text": "Cool",
+                "air_direction_text": "Auto",
+                "fan_speed_text": "Auto"
+              },
+              "_created": 1562928636184,
+              "power": 1,
+              "operation_mode": 3,
+              "fan_speed": 0,
+              "air_direction": 0,
+              "sp_heat": 22.5,
+              "sp_cool": 22.777779,
+              "room_temp": 23,
+              "status_display": {
+                "filter": false,
+                "standby": false,
+                "hot_adjust": false,
+                "defrost": false
+              },
+              "lastAdapterUpdated": "2019-07-12T10:50:36.184Z"
+            },
+            "desiredConditionStack": [],
+            "lastUpdate": 1562928638036,
+            "_requestRescan": 0,
+            "_isRespondingLocally": true,
+            "overrideSettings": {
+              "dryMode": true,
+              "heatMode": true,
+              "ledDisabled": false
+            },
+            "forceCloudUpdates": false,
+            "errorHandler": {
+              "1": {
+                "error2char": "A0",
+                "error4char": "8000",
+                "timestamp": 1562814770,
+                "code": "8000",
+                "text": "8000"
+              }
+            },
+            "equipmentControllerSettings": null,
+            "eqcStageThreeBacksupChannels": {
+              "1": 0,
+              "2": 0,
+              "3": 0,
+              "4": 0
+            },
+            "eqcUpdatedLocally": {
+              "1": false,
+              "2": false,
+              "3": false,
+              "4": false
+            },
+            "systemChangeoverSettings": {
+              "masterZone": {
+                "minRuntime": 20,
+                "maxStandby": 180,
+                "disable": "notset",
+                "activeMode": "__ungettable",
+                "durActive": "__ungettable",
+                "durInactive": "__ungettable"
+              },
+              "priority": 1
+            },
+            "programEventSettings": {
+              "1": {
+                "active": false,
+                "inUse": true,
+                "day": "SuMoTuWeThFrSa",
+                "time": "2130",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": 16.5,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:50:03.722Z"
+              },
+              "2": {
+                "active": false,
+                "inUse": true,
+                "day": "SuMoTuWeThFrSa",
+                "time": "0600",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": 20,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:50:03.722Z"
+              },
+              "3": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:50:03.722Z"
+              },
+              "4": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:50:03.722Z"
+              },
+              "5": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:50:03.722Z"
+              },
+              "6": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:50:03.722Z"
+              },
+              "7": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:50:03.722Z"
+              },
+              "8": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:50:03.305Z"
+              },
+              "9": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:50:03.305Z"
+              },
+              "10": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:50:03.305Z"
+              },
+              "11": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:50:03.305Z"
+              },
+              "12": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:50:03.305Z"
+              },
+              "13": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:50:03.305Z"
+              },
+              "14": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:50:03.305Z"
+              },
+              "15": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:50:02.882Z"
+              },
+              "16": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:50:02.882Z"
+              },
+              "17": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:50:02.882Z"
+              },
+              "18": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:50:02.883Z"
+              },
+              "19": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:50:02.883Z"
+              },
+              "20": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:50:02.883Z"
+              },
+              "21": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:50:02.883Z"
+              },
+              "22": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:50:02.493Z"
+              },
+              "23": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:50:02.493Z"
+              },
+              "24": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:50:02.493Z"
+              },
+              "25": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:50:02.493Z"
+              },
+              "26": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:50:02.493Z"
+              },
+              "27": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:50:02.493Z"
+              },
+              "28": {
+                "active": false,
+                "inUse": false,
+                "day": "",
+                "time": "0000",
+                "optimalStart": false,
+                "settings": {
+                  "mode": "heat",
+                  "spCool": null,
+                  "spHeat": null,
+                  "vaneDir": "auto",
+                  "fanSpeed": "auto"
+                },
+                "lastUpdated": "2019-07-12T10:50:02.493Z"
+              }
+            },
+            "hasElectricHeatingOption": false,
+            "rssi": {
+              "rssi": -44,
+              "string": "Very strong",
+              "image": "images/signal-verystrong-ondark-50x50.svg"
+            },
+            "ledDisabled": false,
+            "password": "some-password-3",
+            "cryptoSerial": "crypto-serial-3",
+            "cryptoKeySet": "F",
+            "kumoSensorSettings": null,
+            "lastAdapterUpdate": "2019-04-26 21:04:16.776079",
+            "firmwareVersion": "00.04.21",
+            "autoModeEnabled": true,
+            "roomTempOffset": 0,
+            "minCoolSetpoint": 16,
+            "maxHeatSetpoint": 31,
+            "reportedInitialSettings": {
+              "assigned_settings": null,
+              "restart_after_outage": 0,
+              "vent_air": 0,
+              "voltage": 0,
+              "energy_save": 0,
+              "filter_alerts": 0,
+              "auto_fan": 0,
+              "pla_outlets": 0,
+              "filter_type": 0,
+              "frost_temp": 0,
+              "defrost": 0,
+              "oscillate": 0,
+              "heating_offset": 0,
+              "thermal_off1": 0,
+              "thermal_off2": 0,
+              "pressure1": 0,
+              "pressure2": 0,
+              "electric_heater1": 0,
+              "electric_heater2": 0,
+              "humidifier": 0,
+              "humidifier_modifier": 0,
+              "leftovers_settings": {
+                "2": 0,
+                "6": 0,
+                "12": 0,
+                "14": 0,
+                "18": 0,
+                "19": 0,
+                "20": 0,
+                "21": 0,
+                "22": 0,
+                "26": 0,
+                "28": 0,
+                "29": 0,
+                "30": 0,
+                "31": 0
+              }
+            },
+            "reportedProfile": {
+              "fan_speed_stages": 5,
+              "has_air_direction": true,
+              "has_auto_fan_speed": true,
+              "has_dry_function": true,
+              "has_extended_temp_range": true,
+              "has_heat_function": true,
+              "has_swing_direction": true,
+              "has_test_run": false,
+              "has_unit_function_setting": false,
+              "has_ventilation_function": true,
+              "maximum_auto_temp": 31,
+              "maximum_cool_or_dry_temp": 31,
+              "maximum_heat_temp": 31,
+              "minimum_auto_temp": 16,
+              "minimum_cool_or_dry_temp": 16,
+              "minimum_heat_temp": 10
+            },
+            "sendDesiredConditionsPending": false,
+            "sendDesiredConditionsTime": "2019-04-26T21:05:34.632Z",
+            "systemChangeoverEnabled": false,
+            "address": "192.168.1.111",
+            "$$hashKey": "object:809",
+            "optimalStart": false
+          }
+        },
+        "children": [],
+        "level": 2,
+        "label": "SSID-1",
+        "id": "1548788045051-3365657514",
+        "lastUpdate": 1552741434294,
+        "network": {
+          "name": "SSID-1",
+          "password": ""
+        },
+        "program": {
+          "events": [
+            {
+              "active": false,
+              "time": "21:30:00",
+              "scopeZoneSerials": [
+                "9SerialF",
+                "7Serial1F"
+              ],
+              "pattern": [
+                true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                true
+              ],
+              "inUse": true,
+              "event_id": null,
+              "mapping": {
+                "9SerialF": "1",
+                "7Serial1F": "1"
+              },
+              "setting": {
+                "more": {
+                  "operation_mode_text": "Cool",
+                  "fan_speed_text": "Auto",
+                  "air_direction_text": "Auto",
+                  "power_on": true
+                },
+                "_created": 1562928638798,
+                "spHeat": 16.5,
+                "spCool": 24,
+                "power": 1,
+                "operation_mode": 1,
+                "fan_speed": 0,
+                "air_direction": 0
+              }
+            },
+            {
+              "active": false,
+              "time": "06:00:00",
+              "scopeZoneSerials": [
+                "9SerialF",
+                "7Serial1F"
+              ],
+              "pattern": [
+                true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                true
+              ],
+              "inUse": true,
+              "event_id": null,
+              "mapping": {
+                "9SerialF": "2",
+                "7Serial1F": "2"
+              },
+              "setting": {
+                "more": {
+                  "operation_mode_text": "Cool",
+                  "fan_speed_text": "Auto",
+                  "air_direction_text": "Auto",
+                  "power_on": true
+                },
+                "_created": 1562928638798,
+                "spHeat": 20,
+                "spCool": 24,
+                "power": 1,
+                "operation_mode": 1,
+                "fan_speed": 0,
+                "air_direction": 0
+              }
+            }
+          ],
+          "deactivated": null
+        }
+      }
+    ],
+    "level": 1,
+    "lastUpdate": 1563123605288,
+    "id": "1548787837233-404113885",
+    "label": "Home",
+    "version": 308
+  },
+  "no device token"
+]
