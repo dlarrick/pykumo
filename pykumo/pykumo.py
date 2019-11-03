@@ -318,15 +318,21 @@ class PyKumo:
 class KumoCloudAccount:
     """ API to talk to KumoCloud servers
     """
-    def __init__(self, username, password):
-        """ Constructor
+    def __init__(self, username, password, kumo_dict=None):
+        """ Constructor from URL
         """
-        self._url = "https://geo-c.kumocloud.com/login"
-
-        self._kumo_dict = None
-        self._last_status_update = time.monotonic() - 2 * CACHE_INTERVAL_SECONDS
-        self._username = username
-        self._password = password
+        if kumo_dict:
+            self._url = None
+            self._kumo_dict = kumo_dict
+            self._username = None
+            self._password = None
+            self._last_status_update = time.monotonic()
+        else:
+            self._url = "https://geo-c.kumocloud.com/login"
+            self._kumo_dict = None
+            self._last_status_update = time.monotonic() - 2 * CACHE_INTERVAL_SECONDS
+            self._username = username
+            self._password = password
 
     def _fetch_if_needed(self):
         """ Fetch configuration from server.
@@ -352,6 +358,11 @@ class KumoCloudAccount:
         """Return raw dict retrieved from KumoCloud"""
         return self._kumo_dict
 
+    # FIXME, this should probably use serial number rather than name,
+    # in case people have the same-named unit in multiple zones, for example.
+    # If so, we need a get_name() API as well, and the other APIs would
+    # take the serial number, But we could keep a dict of units indexed
+    # by serial number.
     def get_indoor_units(self):
         """ Return list of indoor unit names
         """
