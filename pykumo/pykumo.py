@@ -327,12 +327,28 @@ class KumoCloudAccount:
             self._username = None
             self._password = None
             self._last_status_update = time.monotonic()
+            self._units = {}
         else:
             self._url = "https://geo-c.kumocloud.com/login"
             self._kumo_dict = None
-            self._last_status_update = time.monotonic() - 2 * CACHE_INTERVAL_SECONDS
+            self._last_status_update = (time.monotonic() -
+                                        2 * CACHE_INTERVAL_SECONDS)
             self._username = username
             self._password = password
+            self._units = {}
+
+    @staticmethod
+    def _parse_unit(raw_unit):
+        """ Parse needed fields from raw json and return dict representing a unit
+        """
+        unit = {}
+        fields = {'serial', 'label', 'address', 'password', 'cryptoSerial'}
+        try:
+            for field in fields:
+                unit[field] = raw_unit[field]
+        except KeyError:
+            pass
+        return unit
 
     def _fetch_if_needed(self):
         """ Fetch configuration from server.
@@ -353,38 +369,58 @@ class KumoCloudAccount:
             else:
                 print("Error response from KumoCloud: {code} {msg}".format(
                     code=response.status_code, msg=response.text))
+            if not self._kumo_dict:
+                print("No JSON returned from KumoCloud; check credentials?")
+                return
+
+        self._units = {}
+        try:
+            for child in self._kumo_dict[2]['children']:
+                for raw_unit in child['zoneTable'].values():
+                    unit = self._parse_unit(raw_unit)
+                    serial = unit['serial']
+                    self._units[serial] = unit
+                if 'children' in child:
+                    for grandchild in child['children']:
+                        for raw_unit in grandchild['zoneTable'].values():
+                            unit = self._parse_unit(raw_unit)
+                            serial = unit['serial']
+                            self._units[serial] = unit
+        except KeyError:
+            pass
 
     def get_raw_json(self):
         """Return raw dict retrieved from KumoCloud"""
         return self._kumo_dict
 
-    # FIXME, this should probably use serial number rather than name,
-    # in case people have the same-named unit in multiple zones, for example.
-    # If so, we need a get_name() API as well, and the other APIs would
-    # take the serial number, But we could keep a dict of units indexed
-    # by serial number.
     def get_indoor_units(self):
-        """ Return list of indoor unit names
+        """ Return list of indoor unit serial numbers
         """
         self._fetch_if_needed()
-        units = []
+
+        return self._units.keys()
+
+    def get_name(self, unit):
+        """ Return name of given unit
+        """
+        self._fetch_if_needed()
+
         try:
-            for child in self._kumo_dict[2]['children']:
-                for zone in child['zoneTable'].values():
-                    units.append(zone['label'])
+            return self._units[unit]['label']
+
         except KeyError:
             pass
-        return units
+
+        return None
 
     def get_address(self, unit):
         """ Return IP address of named unit
         """
         self._fetch_if_needed()
+
         try:
-            for child in self._kumo_dict[2]['children']:
-                for zone in child['zoneTable'].values():
-                    if zone['label'] == unit:
-                        return zone['address']
+            return self._units[unit]['address']
+
         except KeyError:
             pass
 
@@ -394,13 +430,12 @@ class KumoCloudAccount:
         """ Return dict of credentials required to talk to unit
         """
         self._fetch_if_needed()
+
         try:
-            for child in self._kumo_dict[2]['children']:
-                for zone in child['zoneTable'].values():
-                    if zone['label'] == unit:
-                        credentials = {'password': zone['password'],
-                                       'crypto_serial': zone['cryptoSerial']}
-                        return credentials
+            credentials = {'password': self._units[unit]['password'],
+                           'crypto_serial': self._units[unit]['cryptoSerial']}
+            return credentials
+
         except KeyError:
             pass
 
