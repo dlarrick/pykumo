@@ -615,7 +615,7 @@
           },
           "8SerialF": {
             "serial": "8SerialF",
-            "mac": "a0:c9:a0:65:69:ef",
+            "mac": "99:aa:bb:cc::dd:ee",
             "label": "Loft",
             "port": "80",
             "_isNew": true,
@@ -1237,7 +1237,7 @@
           },
           "9SerialF": {
             "serial": "9SerialF",
-            "mac": "44:91:60:07:27:c2",
+            "mac": "88:99:aa:bb:cc::dd",
             "label": "First Floor",
             "port": "80",
             "_isNew": true,
