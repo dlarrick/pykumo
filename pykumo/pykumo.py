@@ -339,7 +339,8 @@ class KumoCloudAccount:
 
     @staticmethod
     def _parse_unit(raw_unit):
-        """ Parse needed fields from raw json and return dict representing a unit
+        """ Parse needed fields from raw json and return dict representing
+            a unit
         """
         unit = {}
         fields = {'serial', 'label', 'address', 'password', 'cryptoSerial'}
@@ -388,6 +389,12 @@ class KumoCloudAccount:
                             self._units[serial] = unit
         except KeyError:
             pass
+
+    def try_setup(self):
+        """Try to set up and return success/failure"""
+        self._fetch_if_needed()
+
+        return len(self._units.keys()) > 0
 
     def get_raw_json(self):
         """Return raw dict retrieved from KumoCloud"""
