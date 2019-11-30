@@ -1,0 +1,1 @@
+This directory contains JSON retrieved from the KumoCloud server, with personal information removed. `server_parser.py` in the parent directory is for testing such examples. Invoke as `python3 server_parser.py examples/json-file-of-interest`.
