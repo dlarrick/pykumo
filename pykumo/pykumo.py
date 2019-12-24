@@ -13,6 +13,8 @@ S_PARAM = 0
 class PyKumo:
     """ Talk to and control one indoor unit.
     """
+    # pylint: disable=R0904
+
     def __init__(self, name, addr, cfg_json):
         """ Constructor
         """
@@ -163,6 +165,40 @@ class PyKumo:
             val = None
         return val
 
+    def get_fan_speeds(self):
+        """ List of valid fan speeds for unit """
+        try:
+            if self._profile['numberOfFanSpeeds'] != 5:
+                print(
+                    "Unit reports a different number of fan speeds than "
+                    "supported, {num} != 5. Please report which ones work!"
+                    .format(num=self._profile['numberOfFanSpeeds']))
+        except KeyError:
+            pass
+
+        valid_speeds = ["superQuiet", "quiet", "low", "powerful", "superPowerful"]
+        try:
+            if self._profile['hasFanSpeedAuto']:
+                valid_speeds.append('auto')
+        except KeyError:
+            pass
+        return valid_speeds
+
+    def get_vane_directions(self):
+        """ List of valid vane directions for unit """
+        if not self.has_vane_direction():
+            print("Unit does not support vane direction")
+            return []
+
+        valid_directions = ["horizontal", "midhorizontal", "midpoint",
+                            "midvertical", "auto"]
+        try:
+            if self._profile['hasVaneSwing']:
+                valid_directions.append('swing')
+        except KeyError:
+            pass
+        return valid_directions
+
     def get_fan_speed(self):
         """ Last retrieved fan speed mode from unit """
         self._update_status()
@@ -243,10 +279,22 @@ class PyKumo:
             val = self._profile['hasModeAuto']
         except KeyError:
             val = False
+        print("has_auto_mode return {v}".format(v=val))
+        return val
+
+    def has_vane_direction(self):
+        """ True if unit supports changing its vane direction (aka swing) """
+        self._update_status()
+        val = None
+        try:
+            val = self._profile['hasVaneDir']
+        except KeyError:
+            val = False
         return val
 
     def set_mode(self, mode):
-        """ Change operation mode. Valid modes: off, heat, cool, dry, vent, auto
+        """ Change operation mode. Valid modes: off, cool sometimes also heat,
+        dry, vent, auto
         """
         modes = ["off", "cool"]
         if self.has_dry_mode():
@@ -288,11 +336,11 @@ class PyKumo:
         return response
 
     def set_fan_speed(self, speed):
-        """ Change fan speed. Valid speeds: quiet, low, powerful,
-            superPowerful, auto
+        """ Change fan speed. Valid speeds: superQuiet, quiet, low, powerful,
+            superPowerful, sometimes auto
         """
-        # TODO: honor hasFanSpeedAuto and numberOfFanSpeeds from profile
-        if speed not in ["quiet", "low", "powerful", "superPowerful", "auto"]:
+        valid_speeds = self.get_fan_speeds()
+        if speed not in valid_speeds:
             print("Attempting to set invalid fan speed %s" % speed)
             return {}
         command = ('{"c": { "indoorUnit": { "status": { "fanSpeed": "%s" } } } }'
@@ -303,10 +351,10 @@ class PyKumo:
 
     def set_vane_direction(self, direction):
         """ Change vane direction. Valid directions: horizontal, midhorizontal,
-            midpoint, midvertical, swing, auto
+            midpoint, midvertical, auto, and sometimes swing
         """
-        if direction not in ["horizontal", "midhorizontal", "midpoint",
-                             "midvertical", "swing", "auto"]:
+        valid_directions = get_vane_directions()
+        if direction not in valid_directions:
             print("Attempting to set an invalid vane direction %s" % direction)
             return {}
         command = ('{"c": { "indoorUnit": { "status": { "vaneDir": "%s" } } } }'
