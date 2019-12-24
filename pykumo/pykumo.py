@@ -279,7 +279,6 @@ class PyKumo:
             val = self._profile['hasModeAuto']
         except KeyError:
             val = False
-        print("has_auto_mode return {v}".format(v=val))
         return val
 
     def has_vane_direction(self):
