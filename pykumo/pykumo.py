@@ -168,15 +168,19 @@ class PyKumo:
     def get_fan_speeds(self):
         """ List of valid fan speeds for unit """
         try:
-            if self._profile['numberOfFanSpeeds'] != 5:
-                print(
-                    "Unit reports a different number of fan speeds than "
-                    "supported, {num} != 5. Please report which ones work!"
-                    .format(num=self._profile['numberOfFanSpeeds']))
+            speeds = self._profile['numberOfFanSpeeds']
         except KeyError:
-            pass
+            speeds = 5
+        if speeds not in (5, 3):
+            print(
+                "Unit reports a different number of fan speeds than "
+                "supported, {num} != [5|3]. Please report which ones work!"
+                .format(num=self._profile['numberOfFanSpeeds']))
 
-        valid_speeds = ["superQuiet", "quiet", "low", "powerful", "superPowerful"]
+        if speeds == 3:
+            valid_speeds = ["quiet", "low", "powerful"]
+        else:
+            valid_speeds = ["superQuiet", "quiet", "low", "powerful", "superPowerful"]
         try:
             if self._profile['hasFanSpeedAuto']:
                 valid_speeds.append('auto')
@@ -352,7 +356,7 @@ class PyKumo:
         """ Change vane direction. Valid directions: horizontal, midhorizontal,
             midpoint, midvertical, auto, and sometimes swing
         """
-        valid_directions = get_vane_directions()
+        valid_directions = self.get_vane_directions()
         if direction not in valid_directions:
             print("Attempting to set an invalid vane direction %s" % direction)
             return {}
