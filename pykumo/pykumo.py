@@ -4,11 +4,20 @@
 import hashlib
 import base64
 import time
+import logging
 import requests
+from requests.exceptions import Timeout
+
+_LOGGER = logging.getLogger(__name__)
 
 CACHE_INTERVAL_SECONDS = 5
 W_PARAM = bytearray.fromhex('44c73283b498d432ff25f5c8e06a016aef931e68f0a00ea710e36e6338fb22db')
 S_PARAM = 0
+UNIT_CONNECT_TIMEOUT_SECONDS = 0.2
+UNIT_RESPONSE_TIMEOUT_SECONDS = 5
+KUMO_CONNECT_TIMEOUT_SECONDS = 3
+KUMO_RESPONSE_TIMEOUT_SECONDS = 30
+
 
 class PyKumo:
     """ Talk to and control one indoor unit.
@@ -57,11 +66,14 @@ class PyKumo:
                    'Content-Type': 'application/json'}
         token_param = {'m': token}
         try:
-            response = requests.put(url, headers=headers, data=post_data, params=token_param)
+            response = requests.put(
+                url, headers=headers, data=post_data, params=token_param,
+                timeout=(UNIT_CONNECT_TIMEOUT_SECONDS, UNIT_RESPONSE_TIMEOUT_SECONDS))
             return response.json()
+        except Timeout as ex:
+            _LOGGER.warning("Timeout issuing request %s: %s", url, str(ex))
         except Exception as ex:
-            print("Error issuing request {url}: {ex}".format(url=url,
-                                                             ex=str(ex)))
+            _LOGGER.warning("Error issuing request %s: %s", url, str(ex))
         return {}
 
     def _update_status(self):
@@ -78,7 +90,7 @@ class PyKumo:
                 self._status = raw_status['r']['indoorUnit']['status']
                 self._last_status_update = now
             except KeyError:
-                print("Error retrieving status")
+                _LOGGER.warning("Error retrieving status")
 
             query = '{"c":{"sensors":{}}}'.encode('utf-8')
             response = self._request(query)
@@ -89,14 +101,14 @@ class PyKumo:
                     if isinstance(sensor, dict) and sensor['uuid']:
                         self._sensors.append(sensor)
             except KeyError:
-                print("Error retrieving sensors")
+                _LOGGER.warning("Error retrieving sensors")
 
             query = '{"c":{"indoorUnit":{"profile":{}}}}'.encode('utf-8')
             response = self._request(query)
             try:
                 self._profile = response['r']['indoorUnit']['profile']
             except KeyError:
-                print("Error retrieving profile")
+                _LOGGER.warning("Error retrieving profile")
 
             # Edit profile with settings from adapter
             query = '{"c":{"adapter":{"status":{}}}}'.encode('utf-8')
@@ -110,7 +122,7 @@ class PyKumo:
                 if not status.get('userHasModeHeat', False):
                     self._profile['hasModeHeat'] = False
             except KeyError:
-                print("Error retrieving adapter profile")
+                _LOGGER.warning("Error retrieving adapter profile")
 
     def get_name(self):
         """ Unit's name """
@@ -172,10 +184,10 @@ class PyKumo:
         except KeyError:
             speeds = 5
         if speeds not in (5, 3):
-            print(
+            _LOGGER.info(
                 "Unit reports a different number of fan speeds than "
-                "supported, {num} != [5|3]. Please report which ones work!"
-                .format(num=self._profile['numberOfFanSpeeds']))
+                "supported, %d != [5|3]. Please report which ones work!",
+                self._profile['numberOfFanSpeeds'])
 
         if speeds == 3:
             valid_speeds = ["quiet", "low", "powerful"]
@@ -191,7 +203,7 @@ class PyKumo:
     def get_vane_directions(self):
         """ List of valid vane directions for unit """
         if not self.has_vane_direction():
-            print("Unit does not support vane direction")
+            _LOGGER.info("Unit does not support vane direction")
             return []
 
         valid_directions = ["horizontal", "midhorizontal", "midpoint",
@@ -309,7 +321,7 @@ class PyKumo:
         if self.has_auto_mode():
             modes.append("auto")
         if mode not in modes:
-            print("Attempting to set invalid mode %s" % mode)
+            _LOGGER.warning("Attempting to set invalid mode %s", mode)
             return {}
 
         command = ('{"c":{"indoorUnit":{"status":{"mode":"%s"}}}}' %
@@ -344,7 +356,7 @@ class PyKumo:
         """
         valid_speeds = self.get_fan_speeds()
         if speed not in valid_speeds:
-            print("Attempting to set invalid fan speed %s" % speed)
+            _LOGGER.warning("Attempting to set invalid fan speed %s", speed)
             return {}
         command = ('{"c": { "indoorUnit": { "status": { "fanSpeed": "%s" } } } }'
                    % speed).encode('utf-8')
@@ -358,7 +370,7 @@ class PyKumo:
         """
         valid_directions = self.get_vane_directions()
         if direction not in valid_directions:
-            print("Attempting to set an invalid vane direction %s" % direction)
+            _LOGGER.warning("Attempting to set an invalid vane direction %s", direction)
             return {}
         command = ('{"c": { "indoorUnit": { "status": { "vaneDir": "%s" } } } }'
                    % direction).encode('utf-8')
@@ -375,15 +387,14 @@ class KumoCloudAccount:
         if kumo_dict:
             self._url = None
             self._kumo_dict = kumo_dict
+            self._need_fetch = False
             self._username = None
             self._password = None
-            self._last_status_update = time.monotonic()
             self._units = {}
         else:
             self._url = "https://geo-c.kumocloud.com/login"
             self._kumo_dict = None
-            self._last_status_update = (time.monotonic() -
-                                        2 * CACHE_INTERVAL_SECONDS)
+            self._need_fetch = True
             self._username = username
             self._password = password
             self._units = {}
@@ -405,24 +416,28 @@ class KumoCloudAccount:
     def _fetch_if_needed(self):
         """ Fetch configuration from server.
         """
-        now = time.monotonic()
-        if (now - self._last_status_update > CACHE_INTERVAL_SECONDS or
-                not self._kumo_dict):
+        if self._url and self._need_fetch:
             headers = {'Accept': 'application/json, text/plain, */*',
                        'Accept-Encoding': 'gzip, deflate, br',
                        'Accept-Language': 'en-US,en',
                        'Content-Type': 'application/json'}
             body = ('{"username":"%s","password":"%s","appVersion":"2.2.0"}' %
                     (self._username, self._password))
-            response = requests.post(self._url, headers=headers, data=body)
+            try:
+                response = requests.post(self._url, headers=headers, data=body,
+                                         timeout=(KUMO_CONNECT_TIMEOUT_SECONDS,
+                                                  KUMO_RESPONSE_TIMEOUT_SECONDS))
+            except Timeout as ex:
+                _LOGGER.warning("Timeout querying KumoCloud: %s", str(ex))
             if response.ok:
                 self._kumo_dict = response.json()
-                self._last_status_update = now
             else:
-                print("Error response from KumoCloud: {code} {msg}".format(
-                    code=response.status_code, msg=response.text))
+                _LOGGER.warning("Error response from KumoCloud: %s %s}",
+                                str(response.status_code), response.text)
+            # Only try to fetch once
+            self._need_fetch = False
             if not self._kumo_dict:
-                print("No JSON returned from KumoCloud; check credentials?")
+                _LOGGER.warning("No JSON returned from KumoCloud; check credentials?")
                 return
 
         self._units = {}
