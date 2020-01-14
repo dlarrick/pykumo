@@ -6,6 +6,8 @@ import base64
 import time
 import logging
 import requests
+from urllib3.util.retry import Retry
+from requests.adapters import HTTPAdapter
 from requests.exceptions import Timeout
 
 _LOGGER = logging.getLogger(__name__)
@@ -13,18 +15,18 @@ _LOGGER = logging.getLogger(__name__)
 CACHE_INTERVAL_SECONDS = 5
 W_PARAM = bytearray.fromhex('44c73283b498d432ff25f5c8e06a016aef931e68f0a00ea710e36e6338fb22db')
 S_PARAM = 0
-UNIT_CONNECT_TIMEOUT_SECONDS = 0.2
-UNIT_RESPONSE_TIMEOUT_SECONDS = 5
-KUMO_CONNECT_TIMEOUT_SECONDS = 3
-KUMO_RESPONSE_TIMEOUT_SECONDS = 30
+UNIT_CONNECT_TIMEOUT_SECONDS = 0.5
+UNIT_RESPONSE_TIMEOUT_SECONDS = 8
+KUMO_CONNECT_TIMEOUT_SECONDS = 5
+KUMO_RESPONSE_TIMEOUT_SECONDS = 60
 
 
 class PyKumo:
     """ Talk to and control one indoor unit.
     """
-    # pylint: disable=R0904
+    # pylint: disable=R0904, R0902
 
-    def __init__(self, name, addr, cfg_json):
+    def __init__(self, name, addr, cfg_json, timeouts=None):
         """ Constructor
         """
         self._address = addr
@@ -32,6 +34,15 @@ class PyKumo:
         self._security = {
             'password': base64.b64decode(cfg_json["password"]),
             'crypto_serial': bytearray.fromhex(cfg_json["crypto_serial"])}
+        if not timeouts:
+            _LOGGER.info("Use default timeouts")
+            self._timeouts = (UNIT_CONNECT_TIMEOUT_SECONDS,
+                              UNIT_RESPONSE_TIMEOUT_SECONDS)
+        else:
+            _LOGGER.info("Use timeouts=%s", str(timeouts))
+            connect_timeout = timeouts[0] if timeouts[0] else UNIT_CONNECT_TIMEOUT_SECONDS
+            response_timeout = timeouts[1] if timeouts[1] else UNIT_RESPONSE_TIMEOUT_SECONDS
+            self._timeouts = (connect_timeout, response_timeout)
         self._status = {}
         self._profile = {}
         self._sensors = []
@@ -66,9 +77,12 @@ class PyKumo:
                    'Content-Type': 'application/json'}
         token_param = {'m': token}
         try:
-            response = requests.put(
+            session = requests.Session()
+            retries = Retry(total=3)
+            session.mount('http://', HTTPAdapter(max_retries=retries))
+            response = session.put(
                 url, headers=headers, data=post_data, params=token_param,
-                timeout=(UNIT_CONNECT_TIMEOUT_SECONDS, UNIT_RESPONSE_TIMEOUT_SECONDS))
+                timeout=self._timeouts)
             return response.json()
         except Timeout as ex:
             _LOGGER.warning("Timeout issuing request %s: %s", url, str(ex))
@@ -253,6 +267,24 @@ class PyKumo:
             for sensor in self._sensors:
                 if sensor['battery'] is not None:
                     return sensor['battery']
+        except KeyError:
+            val = None
+        return val
+
+    def get_filter_dirty(self):
+        """ Last retrieved filter status from unit """
+        self._update_status()
+        try:
+            val = self._status['filterDirty']
+        except KeyError:
+            val = None
+        return val
+
+    def get_defrost(self):
+        """ Last retrieved filter status from unit """
+        self._update_status()
+        try:
+            val = self._status['defrost']
         except KeyError:
             val = None
         return val

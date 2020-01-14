@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="pykumo",
-    version="0.1.4",
+    version="0.1.5",
     author="Doug Larrick",
     author_email="doug@parkercat.org",
     description="Small library for interfacing with Mitsubishi KumoCloud enabled devices",
