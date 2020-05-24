@@ -12,7 +12,7 @@ from requests.exceptions import Timeout
 
 _LOGGER = logging.getLogger(__name__)
 
-CACHE_INTERVAL_SECONDS = 2
+CACHE_INTERVAL_SECONDS = 5
 W_PARAM = bytearray.fromhex('44c73283b498d432ff25f5c8e06a016aef931e68f0a00ea710e36e6338fb22db')
 S_PARAM = 0
 UNIT_CONNECT_TIMEOUT_SECONDS = 1.2
@@ -79,6 +79,7 @@ class PyKumo:
             session = requests.Session()
             retries = Retry(total=3)
             session.mount('http://', HTTPAdapter(max_retries=retries))
+            _LOGGER.debug("Issue request %s %s", url, post_data)
             response = session.put(
                 url, headers=headers, data=post_data, params=token_param,
                 timeout=self._timeouts)
@@ -343,6 +344,7 @@ class PyKumo:
                    mode).encode('utf-8')
         response = self._request(command)
         self._status['mode'] = mode
+        self._last_status_update = time.monotonic()
         return response
 
     def set_heat_setpoint(self, setpoint):
@@ -353,6 +355,7 @@ class PyKumo:
                    setpoint).encode('utf-8')
         response = self._request(command)
         self._status['spHeat'] = setpoint
+        self._last_status_update = time.monotonic()
         return response
 
     def set_cool_setpoint(self, setpoint):
@@ -363,6 +366,7 @@ class PyKumo:
                    setpoint).encode('utf-8')
         response = self._request(command)
         self._status['spCool'] = setpoint
+        self._last_status_update = time.monotonic()
         return response
 
     def set_fan_speed(self, speed):
@@ -377,6 +381,7 @@ class PyKumo:
                    % speed).encode('utf-8')
         response = self._request(command)
         self._status['fanSpeed'] = speed
+        self._last_status_update = time.monotonic()
         return response
 
     def set_vane_direction(self, direction):
@@ -391,6 +396,7 @@ class PyKumo:
                    % direction).encode('utf-8')
         response = self._request(command)
         self._status['vaneDir'] = direction
+        self._last_status_update = time.monotonic()
         return response
 
 class KumoCloudAccount:
