@@ -216,7 +216,7 @@ class PyKumo:
             return []
 
         valid_directions = ["horizontal", "midhorizontal", "midpoint",
-                            "midvertical", "auto"]
+                            "midvertical", "vertical", "auto"]
         try:
             if self._profile['hasVaneSwing']:
                 valid_directions.append('swing')
@@ -386,7 +386,7 @@ class PyKumo:
 
     def set_vane_direction(self, direction):
         """ Change vane direction. Valid directions: horizontal, midhorizontal,
-            midpoint, midvertical, auto, and sometimes swing
+            midpoint, midvertical, vertical, auto, and sometimes swing
         """
         valid_directions = self.get_vane_directions()
         if direction not in valid_directions:
