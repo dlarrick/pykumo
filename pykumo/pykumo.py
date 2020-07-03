@@ -426,7 +426,7 @@ class KumoCloudAccount:
             a unit
         """
         unit = {}
-        fields = {'serial', 'label', 'address', 'password', 'cryptoSerial'}
+        fields = {'serial', 'label', 'address', 'password', 'cryptoSerial', 'mac'}
         try:
             for field in fields:
                 unit[field] = raw_unit[field]
@@ -514,6 +514,19 @@ class KumoCloudAccount:
 
         try:
             return self._units[unit]['address']
+
+        except KeyError:
+            pass
+
+        return None
+
+    def get_mac(self, unit):
+        """ Return mac address of named unit
+        """
+        self._fetch_if_needed()
+
+        try:
+            return self._units[unit]['mac']
 
         except KeyError:
             pass
