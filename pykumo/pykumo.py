@@ -5,6 +5,7 @@ import hashlib
 import base64
 import time
 import logging
+from getpass import getpass
 import requests
 from urllib3.util.retry import Retry
 from requests.adapters import HTTPAdapter
@@ -402,9 +403,14 @@ class PyKumo:
 class KumoCloudAccount:
     """ API to talk to KumoCloud servers
     """
-    def __init__(self, username, password, kumo_dict=None):
+    def __init__(self, username=None, password=None, kumo_dict=None):
         """ Constructor from URL
         """
+        if username is None:
+            username = input('Kumo Cloud username: ')
+        if password is None:
+            password = getpass()
+
         if kumo_dict:
             self._url = None
             self._kumo_dict = kumo_dict
