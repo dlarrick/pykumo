@@ -555,7 +555,7 @@ class KumoCloudAccount:
 
         return None
 
-    def make_pykumos(self, timeouts=None):
+    def make_pykumos(self, timeouts=None, init_update_status=True):
         """ Return a dict mapping names of all indoor units to newly-created
         `PyKumo` objects
         """
@@ -574,4 +574,9 @@ class KumoCloudAccount:
                 # results in a name like "A/C unit (2)"
             kumos[name] = PyKumo(name, self.get_address(iu),
                                  self.get_credentials(iu), timeouts)
+
+        if init_update_status:
+            for pk in kumos.values():
+                pk.update_status()
+
         return kumos
