@@ -1,6 +1,7 @@
 """ Module to interact with Mitsubishi KumoCloud devices via their local API.
 """
 
+import re
 import hashlib
 import base64
 import time
@@ -561,6 +562,16 @@ class KumoCloudAccount:
         kumos = {}
         for iu in list(self.get_indoor_units()):
             name = self.get_name(iu)
+            if name in kumos:
+                # I'm not sure if it's possible to have the same name repeated,
+                # but just in case...
+                m = re.match(r'(.*) \(([0-9]*)\)', name)
+                if m:
+                    name = m.group(1) + ' ({})'.format(int(m.group(2)) + 1)
+                else:
+                    kumos[name + ' (1)'] = kumos.pop(name)
+                    name = name + ' (2)'
+                # results in a name like "A/C unit (2)"
             kumos[name] = PyKumo(name, self.get_address(iu),
                                  self.get_credentials(iu), timeouts)
         return kumos
