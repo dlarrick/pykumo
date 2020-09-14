@@ -547,3 +547,14 @@ class KumoCloudAccount:
             pass
 
         return None
+
+    def make_pykumos(self, timeouts=None):
+        """ Return a dict mapping names of all indoor units to newly-created
+        `PyKumo` objects
+        """
+        kumos = {}
+        for iu in list(self.get_indoor_units()):
+            name = self.get_name(iu)
+            kumos[name] = PyKumo(name, self.get_address(iu),
+                                 self.get_credentials(iu), timeouts)
+        return kumos
