@@ -1,4 +1,4 @@
-__version__ = '0.1.8'
+__version__ = '0.1.10'
 name = "pykumo"
 
 from .pykumo import PyKumo as PyKumo

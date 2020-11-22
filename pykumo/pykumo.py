@@ -5,10 +5,12 @@ import hashlib
 import base64
 import time
 import logging
+import re
 import requests
 from urllib3.util.retry import Retry
 from requests.adapters import HTTPAdapter
 from requests.exceptions import Timeout
+from getpass import getpass
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -105,6 +107,7 @@ class PyKumo:
                 self._last_status_update = now
             except KeyError:
                 _LOGGER.warning("Error retrieving status")
+                return False
 
             query = '{"c":{"sensors":{}}}'.encode('utf-8')
             response = self._request(query)
@@ -116,6 +119,7 @@ class PyKumo:
                         self._sensors.append(sensor)
             except KeyError:
                 _LOGGER.warning("Error retrieving sensors")
+                return False
 
             query = '{"c":{"indoorUnit":{"profile":{}}}}'.encode('utf-8')
             response = self._request(query)
@@ -123,6 +127,7 @@ class PyKumo:
                 self._profile = response['r']['indoorUnit']['profile']
             except KeyError:
                 _LOGGER.warning("Error retrieving profile")
+                return False
 
             # Edit profile with settings from adapter
             query = '{"c":{"adapter":{"status":{}}}}'.encode('utf-8')
@@ -137,6 +142,8 @@ class PyKumo:
                     self._profile['hasModeHeat'] = False
             except KeyError:
                 _LOGGER.warning("Error retrieving adapter profile")
+                return False
+        return True
 
     def get_name(self):
         """ Unit's name """
@@ -421,6 +428,17 @@ class KumoCloudAccount:
             self._units = {}
 
     @staticmethod
+    def Factory(username=None, password=None):
+        """Factory that prompts for username/password if not given
+        """
+        if username is None:
+            username = input('Kumo Cloud username: ')
+        if password is None:
+            password = getpass()
+
+        return KumoCloudAccount(username, password)
+
+    @staticmethod
     def _parse_unit(raw_unit):
         """ Parse needed fields from raw json and return dict representing
             a unit
@@ -547,3 +565,29 @@ class KumoCloudAccount:
             pass
 
         return None
+
+    def make_pykumos(self, timeouts=None, init_update_status=True):
+        """ Return a dict mapping names of all indoor units to newly-created
+        `PyKumo` objects
+        """
+        kumos = {}
+        for iu in list(self.get_indoor_units()):
+            name = self.get_name(iu)
+            if name in kumos:
+                # I'm not sure if it's possible to have the same name repeated,
+                # but just in case...
+                m = re.match(r'(.*) \(([0-9]*)\)', name)
+                if m:
+                    name = m.group(1) + ' ({})'.format(int(m.group(2)) + 1)
+                else:
+                    kumos[name + ' (1)'] = kumos.pop(name)
+                    name = name + ' (2)'
+                # results in a name like "A/C unit (2)"
+            kumos[name] = PyKumo(name, self.get_address(iu),
+                                 self.get_credentials(iu), timeouts)
+
+        if init_update_status:
+            for pk in kumos.values():
+                pk.update_status()
+
+        return kumos
