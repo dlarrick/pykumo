@@ -140,6 +140,12 @@ class PyKumo:
                     self._profile['hasModeDry'] = False
                 if not status.get('userHasModeHeat', False):
                     self._profile['hasModeHeat'] = False
+                try:
+                    self._profile['wifiRSSI'] = (
+                        status['localNetwork']['stationMode']['RSSI'])
+                except KeyError:
+                    self._profile['wifiRSSI'] = None
+                self._profile['runState'] = status.get('runState', "unknown")
             except KeyError:
                 _LOGGER.warning("Error retrieving adapter profile")
                 return False
@@ -265,6 +271,37 @@ class PyKumo:
             for sensor in self._sensors:
                 if sensor['battery'] is not None:
                     return sensor['battery']
+        except KeyError:
+            val = None
+        return val
+
+    def get_sensor_rssi(self):
+        """ Last retrievd sensor signal strength, if any """
+        val = None
+        try:
+            for sensor in self._sensors:
+                if sensor['rssi'] is not None:
+                    return sensor['rssi']
+        except KeyError:
+            val = None
+        return val
+
+    def get_wifi_rssi(self):
+        """ Last retrieved WiFi signal strengh, if any """
+        """ True if unit has heat mode """
+        val = None
+        try:
+            val = self._profile['wifiRSSI']
+        except KeyError:
+            val = None
+        return val
+
+    def get_runstate(self):
+        """ Last retrieved runState, if any """
+        """ True if unit has heat mode """
+        val = None
+        try:
+            val = self._profile['runState']
         except KeyError:
             val = None
         return val
