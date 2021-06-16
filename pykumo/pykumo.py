@@ -264,6 +264,17 @@ class PyKumo:
             val = None
         return val
 
+    def get_current_sensor_temperature(self):
+        """ Last retrieved temperature from sensor, if any """
+        val = None
+        try:
+            for sensor in self._sensors:
+                if sensor['temperature'] is not None:
+                    return sensor['temperature']
+        except KeyError:
+            val = None
+        return val
+
     def get_sensor_battery(self):
         """ Last retrieved battery percentage from sensor, if any """
         val = None
