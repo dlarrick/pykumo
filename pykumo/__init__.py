@@ -1,5 +1,10 @@
+""" Module to interact with Mitsubishi KumoCloud devices via their local API.
+"""
+
 __version__ = '0.1.12'
 name = "pykumo"
 
-from .pykumo import PyKumo as PyKumo
-from .pykumo import KumoCloudAccount as KumoCloudAccount
+from .py_kumo import PyKumo
+from .py_kumo_cloud_account import KumoCloudAccount
+from .py_kumo_indoor_unit import PyKumoIndoorUnit
+from .py_kumo_station import PyKumoStation

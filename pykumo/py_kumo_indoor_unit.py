@@ -1,29 +1,21 @@
-""" Module to interact with Mitsubishi KumoCloud devices via their local API.
+""" Class used to represent indoor units
 """
 
 import hashlib
 import base64
 import time
 import logging
-import re
 import requests
 from urllib3.util.retry import Retry
 from requests.adapters import HTTPAdapter
 from requests.exceptions import Timeout
 from getpass import getpass
+from .const import CACHE_INTERVAL_SECONDS
+from .py_kumo import PyKumo
 
 _LOGGER = logging.getLogger(__name__)
 
-CACHE_INTERVAL_SECONDS = 5
-W_PARAM = bytearray.fromhex('44c73283b498d432ff25f5c8e06a016aef931e68f0a00ea710e36e6338fb22db')
-S_PARAM = 0
-UNIT_CONNECT_TIMEOUT_SECONDS = 1.2
-UNIT_RESPONSE_TIMEOUT_SECONDS = 8.0
-KUMO_CONNECT_TIMEOUT_SECONDS = 5
-KUMO_RESPONSE_TIMEOUT_SECONDS = 60
-
-
-class PyKumo:
+class PyKumoIndoorUnit(PyKumo):
     """ Talk to and control one indoor unit.
     """
     # pylint: disable=R0904, R0902
@@ -31,66 +23,7 @@ class PyKumo:
     def __init__(self, name, addr, cfg_json, timeouts=None):
         """ Constructor
         """
-        self._address = addr
-        self._name = name
-        self._security = {
-            'password': base64.b64decode(cfg_json["password"]),
-            'crypto_serial': bytearray.fromhex(cfg_json["crypto_serial"])}
-        if not timeouts:
-            _LOGGER.info("Use default timeouts")
-            self._timeouts = (UNIT_CONNECT_TIMEOUT_SECONDS,
-                              UNIT_RESPONSE_TIMEOUT_SECONDS)
-        else:
-            _LOGGER.info("Use timeouts=%s", str(timeouts))
-            connect_timeout = timeouts[0] if timeouts[0] else UNIT_CONNECT_TIMEOUT_SECONDS
-            response_timeout = timeouts[1] if timeouts[1] else UNIT_RESPONSE_TIMEOUT_SECONDS
-            self._timeouts = (connect_timeout, response_timeout)
-        self._status = {}
-        self._profile = {}
-        self._sensors = []
-        self._last_status_update = time.monotonic() - 2 * CACHE_INTERVAL_SECONDS
-
-    def _token(self, post_data):
-        """ Compute URL including security token for a given command
-        """
-        data_hash = hashlib.sha256(self._security['password'] +
-                                   post_data).digest()
-
-        intermediate = bytearray(88)
-        intermediate[0:32] = W_PARAM[0:32]
-        intermediate[32:64] = data_hash[0:32]
-        intermediate[64:66] = bytearray.fromhex("0840")
-        intermediate[66] = S_PARAM
-        intermediate[79] = self._security['crypto_serial'][8]
-        intermediate[80:84] = self._security['crypto_serial'][4:8]
-        intermediate[84:88] = self._security['crypto_serial'][0:4]
-
-        token = hashlib.sha256(intermediate).hexdigest()
-
-        return token
-
-    def _request(self, post_data):
-        """ Send request to configured unit and return response dict
-        """
-        url = "http://" + self._address + "/api"
-        token = self._token(post_data)
-        headers = {'Accept': 'application/json, text/plain, */*',
-                   'Content-Type': 'application/json'}
-        token_param = {'m': token}
-        try:
-            session = requests.Session()
-            retries = Retry(total=3)
-            session.mount('http://', HTTPAdapter(max_retries=retries))
-            _LOGGER.debug("Issue request %s %s", url, post_data)
-            response = session.put(
-                url, headers=headers, data=post_data, params=token_param,
-                timeout=self._timeouts)
-            return response.json()
-        except Timeout as ex:
-            _LOGGER.warning("Timeout issuing request %s: %s", url, str(ex))
-        except Exception as ex:
-            _LOGGER.warning("Error issuing request %s: %s", url, str(ex))
-        return {}
+        super().__init__(name, addr, cfg_json, timeouts)
 
     def update_status(self):
         """ Retrieve and cache current status dictionary if enough time
@@ -151,13 +84,6 @@ class PyKumo:
                 return False
         return True
 
-    def get_name(self):
-        """ Unit's name """
-        return self._name
-
-    def get_status(self):
-        """ Last retrieved status dictionary from unit """
-        return self._status
 
     def get_mode(self):
         """ Last retrieved operating mode from unit """
@@ -282,27 +208,6 @@ class PyKumo:
             for sensor in self._sensors:
                 if sensor['battery'] is not None:
                     return sensor['battery']
-        except KeyError:
-            val = None
-        return val
-
-    def get_sensor_rssi(self):
-        """ Last retrievd sensor signal strength, if any """
-        val = None
-        try:
-            for sensor in self._sensors:
-                if sensor['rssi'] is not None:
-                    return sensor['rssi']
-        except KeyError:
-            val = None
-        return val
-
-    def get_wifi_rssi(self):
-        """ Last retrieved WiFi signal strengh, if any """
-        """ True if unit has heat mode """
-        val = None
-        try:
-            val = self._profile['wifiRSSI']
         except KeyError:
             val = None
         return val
@@ -454,188 +359,3 @@ class PyKumo:
         self._last_status_update = time.monotonic()
         return response
 
-class KumoCloudAccount:
-    """ API to talk to KumoCloud servers
-    """
-    def __init__(self, username, password, kumo_dict=None):
-        """ Constructor from URL
-        """
-        if kumo_dict:
-            self._url = None
-            self._kumo_dict = kumo_dict
-            self._need_fetch = False
-            self._username = None
-            self._password = None
-            self._units = {}
-        else:
-            self._url = "https://geo-c.kumocloud.com/login"
-            self._kumo_dict = None
-            self._need_fetch = True
-            self._username = username
-            self._password = password
-            self._units = {}
-
-    @staticmethod
-    def Factory(username=None, password=None):
-        """Factory that prompts for username/password if not given
-        """
-        if username is None:
-            username = input('Kumo Cloud username: ')
-        if password is None:
-            password = getpass()
-
-        return KumoCloudAccount(username, password)
-
-    @staticmethod
-    def _parse_unit(raw_unit):
-        """ Parse needed fields from raw json and return dict representing
-            a unit
-        """
-        unit = {}
-        fields = {'serial', 'label', 'address', 'password', 'cryptoSerial', 'mac'}
-        try:
-            for field in fields:
-                unit[field] = raw_unit[field]
-        except KeyError:
-            pass
-        return unit
-
-    def _fetch_if_needed(self):
-        """ Fetch configuration from server.
-        """
-        if self._url and self._need_fetch:
-            headers = {'Accept': 'application/json, text/plain, */*',
-                       'Accept-Encoding': 'gzip, deflate, br',
-                       'Accept-Language': 'en-US,en',
-                       'Content-Type': 'application/json'}
-            body = ('{"username":"%s","password":"%s","appVersion":"2.2.0"}' %
-                    (self._username, self._password))
-            try:
-                response = requests.post(self._url, headers=headers, data=body,
-                                         timeout=(KUMO_CONNECT_TIMEOUT_SECONDS,
-                                                  KUMO_RESPONSE_TIMEOUT_SECONDS))
-            except Timeout as ex:
-                _LOGGER.warning("Timeout querying KumoCloud: %s", str(ex))
-            if response.ok:
-                self._kumo_dict = response.json()
-            else:
-                _LOGGER.warning("Error response from KumoCloud: %s %s}",
-                                str(response.status_code), response.text)
-            # Only try to fetch once
-            self._need_fetch = False
-            if not self._kumo_dict:
-                _LOGGER.warning("No JSON returned from KumoCloud; check credentials?")
-                return
-
-        self._units = {}
-        try:
-            for child in self._kumo_dict[2]['children']:
-                for raw_unit in child['zoneTable'].values():
-                    unit = self._parse_unit(raw_unit)
-                    serial = unit['serial']
-                    self._units[serial] = unit
-                if 'children' in child:
-                    for grandchild in child['children']:
-                        for raw_unit in grandchild['zoneTable'].values():
-                            unit = self._parse_unit(raw_unit)
-                            serial = unit['serial']
-                            self._units[serial] = unit
-        except KeyError:
-            pass
-
-    def try_setup(self):
-        """Try to set up and return success/failure"""
-        self._fetch_if_needed()
-
-        return len(self._units.keys()) > 0
-
-    def get_raw_json(self):
-        """Return raw dict retrieved from KumoCloud"""
-        return self._kumo_dict
-
-    def get_indoor_units(self):
-        """ Return list of indoor unit serial numbers
-        """
-        self._fetch_if_needed()
-
-        return self._units.keys()
-
-    def get_name(self, unit):
-        """ Return name of given unit
-        """
-        self._fetch_if_needed()
-
-        try:
-            return self._units[unit]['label']
-
-        except KeyError:
-            pass
-
-        return None
-
-    def get_address(self, unit):
-        """ Return IP address of named unit
-        """
-        self._fetch_if_needed()
-
-        try:
-            return self._units[unit]['address']
-
-        except KeyError:
-            pass
-
-        return None
-
-    def get_mac(self, unit):
-        """ Return mac address of named unit
-        """
-        self._fetch_if_needed()
-
-        try:
-            return self._units[unit]['mac']
-
-        except KeyError:
-            pass
-
-        return None
-
-    def get_credentials(self, unit):
-        """ Return dict of credentials required to talk to unit
-        """
-        self._fetch_if_needed()
-
-        try:
-            credentials = {'password': self._units[unit]['password'],
-                           'crypto_serial': self._units[unit]['cryptoSerial']}
-            return credentials
-
-        except KeyError:
-            pass
-
-        return None
-
-    def make_pykumos(self, timeouts=None, init_update_status=True):
-        """ Return a dict mapping names of all indoor units to newly-created
-        `PyKumo` objects
-        """
-        kumos = {}
-        for iu in list(self.get_indoor_units()):
-            name = self.get_name(iu)
-            if name in kumos:
-                # I'm not sure if it's possible to have the same name repeated,
-                # but just in case...
-                m = re.match(r'(.*) \(([0-9]*)\)', name)
-                if m:
-                    name = m.group(1) + ' ({})'.format(int(m.group(2)) + 1)
-                else:
-                    kumos[name + ' (1)'] = kumos.pop(name)
-                    name = name + ' (2)'
-                # results in a name like "A/C unit (2)"
-            kumos[name] = PyKumo(name, self.get_address(iu),
-                                 self.get_credentials(iu), timeouts)
-
-        if init_update_status:
-            for pk in kumos.values():
-                pk.update_status()
-
-        return kumos
