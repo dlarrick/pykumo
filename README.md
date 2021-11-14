@@ -40,3 +40,11 @@ import pprint
 pp = pp.PrettyPrinter()
 pp.pprint(unit.__dict__)
 ```
+
+### Direct indoor unit calls
+The indoor units speak a simple protocol of nested JSON. I'm not documenting the protocol here (though documentation patches would be welcome!), but if you look through the `pykumo.py` code for calls to `self._request` you can see the queries and commands that are already in use. For example:
+```
+query = '{"c":{"indoorUnit":{"status":{}}}}'.encode('utf-8')
+unit._request(query)
+```
+This prints the primary record, the `status` object. Most of the valid queries and commands were discovered by snooping the traffic between the KumoCloud app and the indoor unit; some by experimentation. It's possible more values and controls are available than have been discovered, especially on indoor units newer than those owned by this author.
