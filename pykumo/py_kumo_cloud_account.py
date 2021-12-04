@@ -7,14 +7,14 @@ import requests
 from urllib3.util.retry import Retry
 from requests.exceptions import Timeout
 from .py_kumo import PyKumo
-from .py_kumo_indoor_unit import PyKumoIndoorUnit
+from .py_kumo_base import PyKumoBase
 from .py_kumo_station import PyKumoStation
 from .const import KUMO_CONNECT_TIMEOUT_SECONDS, KUMO_RESPONSE_TIMEOUT_SECONDS
 
 _LOGGER = logging.getLogger(__name__)
 
 KUMO_UNIT_TYPE_TO_CLASS = {
-    "ductless": PyKumoIndoorUnit,
+    "ductless": PyKumo,
     "headless": PyKumoStation
 }
 
@@ -205,10 +205,10 @@ class KumoCloudAccount:
 
     def make_pykumos(self, timeouts=None, init_update_status=True):
         """ Return a dict mapping names of all indoor units to newly-created
-        `PyKumo` objects
+        `PyKumoBase` objects
         """
         kumos = {}
-        for unitSerial in list(self.get_units()):
+        for unitSerial in list(self.get_all_units()):
             name = self.get_name(unitSerial)
             if name in kumos:
                 # I'm not sure if it's possible to have the same name repeated,

@@ -4,7 +4,7 @@
 __version__ = '0.1.12'
 name = "pykumo"
 
-from .py_kumo import PyKumo
+from .py_kumo_base import PyKumoBase
 from .py_kumo_cloud_account import KumoCloudAccount
-from .py_kumo_indoor_unit import PyKumoIndoorUnit
+from .py_kumo import PyKumo
 from .py_kumo_station import PyKumoStation

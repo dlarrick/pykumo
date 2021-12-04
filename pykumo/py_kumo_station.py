@@ -11,11 +11,11 @@ from requests.adapters import HTTPAdapter
 from requests.exceptions import Timeout
 from getpass import getpass
 from .const import CACHE_INTERVAL_SECONDS
-from .py_kumo import PyKumo
+from .py_kumo_base import PyKumoBase
 
 _LOGGER = logging.getLogger(__name__)
 
-class PyKumoStation(PyKumo):
+class PyKumoStation(PyKumoBase):
     """ Talk to and control one indoor unit.
     """
     # pylint: disable=R0904, R0902

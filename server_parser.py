@@ -23,7 +23,7 @@ def main():
     # kumos = account.make_pykumos()
     # for kumoName in kumos:
     #     if isinstance(kumos[kumoName], PyKumoStation):
-    #         print("Station Outdoor Temp: %s" % (kumos[kumoName].get_outdoor_temperature()))
+    #         print("Kumo Station Outdoor Temp: %s" % (kumos[kumoName].get_outdoor_temperature()))
     #     else:
     #         print("Indoor Unit %s Current Temp: %s" % (kumoName, kumos[kumoName].get_current_temperature()))
 
