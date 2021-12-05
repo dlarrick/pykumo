@@ -223,7 +223,7 @@ class KumoCloudAccount:
             unitType = self.get_unit_type(unitSerial)
             if unitType in KUMO_UNIT_TYPE_TO_CLASS.keys():
                 kumos[name] = KUMO_UNIT_TYPE_TO_CLASS[unitType](name, self.get_address(unitSerial),
-                                    self.get_credentials(unitSerial), timeouts)
+                                    self.get_credentials(unitSerial), timeouts, unitSerial)
             else:
                 _LOGGER.warning("Unable to determine unit type %s", unitType)
 

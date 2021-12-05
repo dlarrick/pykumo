@@ -20,10 +20,10 @@ class PyKumo(PyKumoBase):
     """
     # pylint: disable=R0904, R0902
 
-    def __init__(self, name, addr, cfg_json, timeouts=None):
+    def __init__(self, name, addr, cfg_json, timeouts=None, serial=None):
         """ Constructor
         """
-        super().__init__(name, addr, cfg_json, timeouts)
+        super().__init__(name, addr, cfg_json, timeouts, serial)
 
     def update_status(self):
         """ Retrieve and cache current status dictionary if enough time

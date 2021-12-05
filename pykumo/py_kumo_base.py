@@ -19,11 +19,12 @@ class PyKumoBase:
     """
     # pylint: disable=R0904, R0902
 
-    def __init__(self, name, addr, cfg_json, timeouts=None):
+    def __init__(self, name, addr, cfg_json, timeouts=None, serial=None):
         """ Constructor
         """
-        self._address = addr
         self._name = name
+        self._address = addr
+        self._serial = serial
         self._security = {
             'password': base64.b64decode(cfg_json["password"]),
             'crypto_serial': bytearray.fromhex(cfg_json["crypto_serial"])}
@@ -97,6 +98,10 @@ class PyKumoBase:
         """ Unit's name """
         return self._name
 
+    def get_serial(self):
+        """ Unit's serial number """
+        return self._serial
+
     def get_sensor_rssi(self):
         """ Last retrievd sensor signal strength, if any """
         val = None
@@ -110,7 +115,6 @@ class PyKumoBase:
 
     def get_wifi_rssi(self):
         """ Last retrieved WiFi signal strengh, if any """
-        """ True if unit has heat mode """
         val = None
         try:
             val = self._profile['wifiRSSI']
