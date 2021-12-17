@@ -121,6 +121,27 @@ class PyKumo:
                 _LOGGER.warning("Error retrieving sensors")
                 return False
 
+            query = '{"c":{"mhk2":{"status":{}}}}'.encode('utf-8')
+            response = self._request(query)
+            try:
+                self._mhk2 = response['r']['mhk2']
+                mhk2_humidity = self._mhk2['status']['indoorHumid']
+
+                # Add a fake sensor for the MHK2 unit.
+                mhk2_sensor_value = {
+                    'battery': None,
+                    'humidity': mhk2_humidity,
+                    'rssi': None,
+                    'temperature': None,
+                    'txPower': None,
+                    'uuid': None
+                }
+                self._sensors.append(mhk2_sensor_value)
+            except KeyError:
+                # We don't bailout here since the MHK2 component is optional.
+                _LOGGER.info("Error retrieving MHK2 status")
+                pass
+
             query = '{"c":{"indoorUnit":{"profile":{}}}}'.encode('utf-8')
             response = self._request(query)
             try:
