@@ -516,11 +516,12 @@ class KumoCloudAccount:
                                                   KUMO_RESPONSE_TIMEOUT_SECONDS))
             except Timeout as ex:
                 _LOGGER.warning("Timeout querying KumoCloud: %s", str(ex))
-            if response.ok:
-                self._kumo_dict = response.json()
-            else:
-                _LOGGER.warning("Error response from KumoCloud: %s %s}",
-                                str(response.status_code), response.text)
+            if 'response' in locals():
+                if response.ok:
+                    self._kumo_dict = response.json()
+                else:
+                    _LOGGER.warning("Error response from KumoCloud: %s %s}",
+                                    str(response.status_code), response.text)
             # Only try to fetch once
             self._need_fetch = False
             if not self._kumo_dict:
