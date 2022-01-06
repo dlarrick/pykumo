@@ -70,14 +70,15 @@ class PyKumoBase:
                    'Content-Type': 'application/json'}
         token_param = {'m': token}
         try:
-            session = requests.Session()
-            retries = Retry(total=3)
-            session.mount('http://', HTTPAdapter(max_retries=retries))
-            _LOGGER.debug("Issue request %s %s", url, post_data)
-            response = session.put(
-                url, headers=headers, data=post_data, params=token_param,
-                timeout=self._timeouts)
-            return response.json()
+        try:
+            with requests.Session() as session:
+                retries = Retry(total=3)
+                session.mount('http://', HTTPAdapter(max_retries=retries))
+                _LOGGER.debug("Issue request %s %s", url, post_data)
+                response = session.put(
+                    url, headers=headers, data=post_data, params=token_param,
+                    timeout=self._timeouts)
+                return response.json()            
         except Timeout as ex:
             _LOGGER.warning("Timeout issuing request %s: %s", url, str(ex))
         except Exception as ex:
