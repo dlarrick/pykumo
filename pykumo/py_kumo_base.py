@@ -70,7 +70,6 @@ class PyKumoBase:
                    'Content-Type': 'application/json'}
         token_param = {'m': token}
         try:
-        try:
             with requests.Session() as session:
                 retries = Retry(total=3)
                 session.mount('http://', HTTPAdapter(max_retries=retries))

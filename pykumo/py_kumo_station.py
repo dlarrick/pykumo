@@ -1,4 +1,4 @@
-""" Class used to represent indoor units
+""" Class used to represent Kumo Station units
 """
 
 import hashlib
@@ -16,7 +16,7 @@ from .py_kumo_base import PyKumoBase
 _LOGGER = logging.getLogger(__name__)
 
 class PyKumoStation(PyKumoBase):
-    """ Talk to and control one indoor unit.
+    """ Talk to and control one KumoStation
     """
     # pylint: disable=R0904, R0902
 

@@ -82,6 +82,30 @@ class PyKumo(PyKumoBase):
             except KeyError:
                 _LOGGER.warning("Error retrieving adapter profile")
                 return False
+
+            # Edit profile with data from MHK2 if present
+            query = '{"c":{"mhk2":{"status":{}}}}'.encode('utf-8')
+            response = self._request(query)
+            try:
+                self._mhk2 = response['r']['mhk2']
+                if isinstance(self._mhk2, dict):
+                    mhk2_humidity = self._mhk2['status']['indoorHumid']
+
+                    if mhk2_humidity is not None:
+                        # Add a sensor entry for the MHK2 unit.
+                        mhk2_sensor_value = {
+                            'battery': None,
+                            'humidity': mhk2_humidity,
+                            'rssi': None,
+                            'temperature': None,
+                            'txPower': None,
+                            'uuid': None
+                        }
+                        self._sensors.append(mhk2_sensor_value)
+            except (KeyError, TypeError) as e:
+                # We don't bailout here since the MHK2 component is optional.
+                _LOGGER.info(f"Error retrieving MHK2 status: {e}")
+                pass
         return True
 
 
@@ -180,7 +204,7 @@ class PyKumo(PyKumoBase):
         return val
 
     def get_current_humidity(self):
-        """ Last retrieved humidity from sensor, if any """
+        """ Last retrieved humidity from sensor or MHK2, if any """
         val = None
         try:
             for sensor in self._sensors:
