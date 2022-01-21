@@ -223,11 +223,10 @@ class KumoCloudAccount:
                     name = name + ' (2)'
                 # results in a name like "A/C unit (2)"
             unitType = self.get_unit_type(unitSerial)
-            if unitType in KUMO_UNIT_TYPE_TO_CLASS.keys():
-                kumos[name] = KUMO_UNIT_TYPE_TO_CLASS[unitType](name, self.get_address(unitSerial),
-                                    self.get_credentials(unitSerial), timeouts, unitSerial)
-            else:
-                _LOGGER.warning("Unable to determine unit type %s", unitType)
+
+            kumo_class = KUMO_UNIT_TYPE_TO_CLASS.get(unitType, PyKumo)
+            kumos[name] = kumo_class(name, self.get_address(unitSerial),
+                    self.get_credentials(unitSerial), timeouts, unitSerial)
 
         if init_update_status:
             for pk in kumos.values():
