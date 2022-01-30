@@ -3,6 +3,26 @@ Python library to interact with Mitsubishi KumoCloud devices via their local API
 
 The hard work of generating the security token was done by https://github.com/sushilks/kumojs and that part is based heavily on his code, translated to Python by me.
 
+## Kumo System Components
+
+### Outdoor Unit
+The outdoor unit houses the compressor and the outdoor coil. Each indoor unit connects back to its outdoor unit by a pair of refrigerant lines and an electric power supply & communication cable. KumoCloud does not appear to be able to communicate directly with an outdoor unit
+
+### Indoor Unit
+The indoor unit(s) are in the controlled space and house the indoor fan & coil, providing cooling or heating. An indoor unit can have:
+* WiFi adapter (e.g. PAC-USWHS002-WF-2) (via CN105 connector)
+* Wall-mounted controller MHK2 (via CN105 connector)
+* Wireless remote sensor (via Bluetooth to the WiFi adapter)
+An indoor unit with WiFi adapter has its own IP address.
+
+Pykumo communicates with the indoor unit via the WiFi adapter, using an API that it exposes.
+
+### MHK2
+The MHK2 wall-mounted controller, if present, acts like a traditional thermostat for a single indoor unit, while also providing other controls and its own temperature & humidity sensors.
+
+### Kumo Station
+Kumo Station allows controlling traditional HVAC equipment via the Kumo Cloud app, managing switchover between Kumo and external equipment. It also provides an outdoor temperature sensor. A Kumo Station has its own IP address.
+
 ## Interactive use
 It's possible to use pykumo in an interactive shell to do debugging, investigation of possible new features, etc.
 
