@@ -6,6 +6,7 @@ import re
 import requests
 from urllib3.util.retry import Retry
 from requests.exceptions import Timeout
+from getpass import getpass
 from .py_kumo import PyKumo
 from .py_kumo_base import PyKumoBase
 from .py_kumo_station import PyKumoStation
