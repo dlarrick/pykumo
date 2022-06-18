@@ -1,6 +1,7 @@
 """ Class used to represent the Kumo Cloud service
 """
 
+import json
 import logging
 import re
 import requests
@@ -73,10 +74,12 @@ class KumoCloudAccount:
                        'Accept-Encoding': 'gzip, deflate, br',
                        'Accept-Language': 'en-US,en',
                        'Content-Type': 'application/json'}
-            body = ('{"username":"%s","password":"%s","appVersion":"2.2.0"}' %
-                    (self._username, self._password))
+
+            body = { "username": self._username,
+                     "password": self._password,
+                     "appVersion": "2.2.0" }
             try:
-                response = requests.post(self._url, headers=headers, data=body,
+                response = requests.post(self._url, headers=headers, data=json.dumps(body),
                                          timeout=(KUMO_CONNECT_TIMEOUT_SECONDS,
                                                   KUMO_RESPONSE_TIMEOUT_SECONDS))
             except Timeout as ex:
