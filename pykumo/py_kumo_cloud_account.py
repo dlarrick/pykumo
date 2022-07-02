@@ -17,6 +17,9 @@ _LOGGER = logging.getLogger(__name__)
 
 KUMO_UNIT_TYPE_TO_CLASS = {
     "ductless": PyKumo,
+    "mvz": PyKumo,
+    "sez": PyKumo,
+    "pead": PyKumo,
     "headless": PyKumoStation
 }
 
@@ -134,13 +137,15 @@ class KumoCloudAccount:
         """ Return list of indoor unit serial numbers
         """
 
-        return list(filter(lambda x: self._units[x]['unitType'] == 'ductless', self.get_all_units()))
+        return list(filter(
+            lambda x: self.is_indoor_unit(x), self.get_all_units()))
 
     def get_kumo_stations(self):
         """ Return list of kumo station serial numbers
         """
 
-        return list(filter(lambda x: self._units[x]['unitType'] == 'headless', self.get_all_units()))
+        return list(filter(
+            lambda x: self.is_headless_unit(x), self.get_all_units()))
 
     def get_name(self, unit):
         """ Return name of given unit
@@ -155,8 +160,28 @@ class KumoCloudAccount:
 
         return None
 
+    def is_indoor_unit(self, unit):
+        """ Return whether unit is an indoor unit
+        """
+        self._fetch_if_needed()
+
+        unit_type = self.get_unit_type(unit)
+        if unit_type == "headless":
+            return False
+        return True
+
+    def is_headless_unit(self, unit):
+        """ Return whether unit is a headless unit (KumoStation)
+        """
+        self._fetch_if_needed()
+
+        unit_type = self.get_unit_type(unit)
+        if unit_type == "headless":
+            return True
+        return False
+
     def get_unit_type(self, unit):
-        """ Return name of given unit
+        """ Return unit type of given unit
         """
         self._fetch_if_needed()
 
