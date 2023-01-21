@@ -4,6 +4,7 @@
 import hashlib
 import base64
 import time
+import datetime
 import logging
 import requests
 from urllib3.util.retry import Retry
@@ -262,6 +263,32 @@ class PyKumo(PyKumoBase):
             val = None
         return val
 
+    def get_hold_time(self):
+        """ Get hold time from MHK2 """
+        query = '{"c":{"mhk2":{"hold":{"adapter":{"endTime":{}}}}}}'.encode('utf-8')
+        response = self._request(query)
+        try:
+            end_time = response['r']['mhk2']['hold']['adapter']['endTime']
+        except KeyError:
+            end_time = None
+        return end_time
+
+    def get_hold_status(self):
+        """ Get hold status similar to representation on kumo app and MHK2 display """
+        end_time = self.get_hold_time()
+        # mhk returns 3774499593 for "permanent hold"
+        if end_time == 3774499593:
+            hold_status = "permanent hold"
+        elif end_time == 0:
+            hold_status =  "following schedule"
+        elif (end_time - time.time()) > 86400:
+            days = round((end_time - time.time()) / 86400)
+            hold_status =  f"hold for {days} days"
+        else:
+            dt = datetime.datetime.fromtimestamp(end_time)
+            hold_status =  f"hold until {dt.strftime('%H:%M')}"
+        return hold_status
+
     def has_dry_mode(self):
         """ True if unit has dry (dehumidify) mode """
         val = None
@@ -383,3 +410,13 @@ class PyKumo(PyKumoBase):
         self._last_status_update = time.monotonic()
         return response
 
+    def set_hold(self, end_time):
+        """ Set a hold on the current temperature until end_time.
+            Accepts unix timesamp.
+            MHK uses 4294967295 to set 'permanent hold'
+        """
+        command = ('{"c":{"mhk2":{"hold":{"adapter":{"endTime": %d}}}}}'
+                   % end_time).encode('utf-8')
+        response = self._request(command)
+        self._last_status_update = time.monotonic()
+        return response
