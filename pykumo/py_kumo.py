@@ -277,7 +277,10 @@ class PyKumo(PyKumoBase):
         """ Get hold status similar to representation on kumo app and MHK2 display """
         end_time = self.get_hold_time()
         # mhk returns 3774499593 for "permanent hold"
-        if end_time == 3774499593:
+        if end_time == None:
+            _LOGGER.warning("End time not available")
+            hold_status = ""
+        elif end_time == 3774499593:
             hold_status = "permanent hold"
         elif end_time == 0:
             hold_status =  "following schedule"
