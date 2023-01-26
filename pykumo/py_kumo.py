@@ -284,7 +284,7 @@ class PyKumo(PyKumoBase):
             hold_status = "permanent hold"
         elif end_time == 0:
             hold_status =  "following schedule"
-        elif (end_time - time.time()) > 86400:
+        elif (end_time - time.time()) > 82800:  # 23 hours
             days = round((end_time - time.time()) / 86400)
             hold_status =  f"hold for {days} days"
         else:
