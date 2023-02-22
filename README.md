@@ -60,7 +60,7 @@ The indoor unit name is the human-readable name. If successful, `update_status` 
 You can print the internal state of the indoor unit object, which includes the JSON information fetched from the unit itself. This is a good place to look when requesting support for additional pykumo features.
 ```
 import pprint
-pp = pp.PrettyPrinter()
+pp = pprint.PrettyPrinter()
 pp.pprint(unit.__dict__)
 ```
 
