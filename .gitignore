@@ -105,3 +105,4 @@ venv.bak/
 
 # Local config
 examples/local.json
+kumo_cache.json
