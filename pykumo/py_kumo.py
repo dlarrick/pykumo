@@ -42,7 +42,8 @@ class PyKumo(PyKumoBase):
         super().__init__(name, addr, cfg_json, timeouts, serial)
 
     def _retrieve_attributes(
-            self, query_path: list[str], needed: list[str]) -> dict:
+            self, query_path: list[str], needed: list[str],
+            do_top_query: bool = False) -> dict:
         """ Try to retrieve a base query, but in specific error conditions retrieve specific
             needed attributes individually.
         """
@@ -52,10 +53,13 @@ class PyKumo(PyKumoBase):
         base_query += '}' * (len(query_path) + 2)
         query = base_query.encode('utf-8')
         try:
-            response = self._request(query)
-            if (response.get('_api_error', "") == 'serializer_error' or
-                response.get('r') == '__no_memory'):
-                # Base query response is too long. Get the needed attributes.
+            response = None
+            if do_top_query:
+                response = self._request(query)
+            if (not response or
+                response.get('_api_error', "") == 'serializer_error' or
+                '__no_memory' in str(response)):
+                # Use individual attribute queries
                 response = {'r': {}}
                 for attribute in needed:
                     attr_query = base_query.replace(
@@ -65,8 +69,7 @@ class PyKumo(PyKumoBase):
                         response = merge(response, sub_response)
                     else:
                         _LOGGER.warning(
-                            "Did not get %s from %s: %s",
-                            attribute, base_query, str(sub_response))
+                            f"{self._name}: Did not get {attribute} from {attr_query}: {sub_response}")
         except Exception as e:
             _LOGGER.warning(
                 "Exception fetching %s: %s", base_query, str(e))
@@ -90,21 +93,24 @@ class PyKumo(PyKumoBase):
                 self._status = raw_status['r']['indoorUnit']['status']
                 self._last_status_update = now
             except KeyError as ke:
-                _LOGGER.warning("Error retrieving status: %s", str(ke))
+                _LOGGER.warning(f"{self._name}: Error retrieving status from {response}: {str(ke)}")
                 return False
 
             self._sensors = []
-            query = ['sensors']
-            needed = [f'{s}' for s in range(POSSIBLE_SENSORS)]
-            response = self._retrieve_attributes(query, needed)
+            for s in range(POSSIBLE_SENSORS):
+                s_str = f'{s}'
+                query = ['sensors', s_str]
+                needed = ['uuid', 'humidity', 'temperature', 'battery', 'rssi', 'txPower']
+                
+                response = self._retrieve_attributes(query, needed)
 
-            try:
-                for sensor in response['r']['sensors'].values():
+                try:
+                    sensor = response['r']['sensors'][s_str]
                     if isinstance(sensor, dict) and sensor.get('uuid'):
                         self._sensors.append(sensor)
-            except KeyError as ke:
-                _LOGGER.warning("Error retrieving sensors: %s", str(ke))
-                return False
+                except KeyError as ke:
+                    _LOGGER.warning(f"{self._name}: Error retrieving sensors from {response}: {str(ke)}")
+                    return False
 
             query = ['indoorUnit', 'profile']
             needed = ['numberOfFanSpeeds', 'hasFanSpeedAuto', 'hasVaneSwing', 'hasModeDry',
@@ -116,7 +122,7 @@ class PyKumo(PyKumoBase):
             try:
                 self._profile = response['r']['indoorUnit']['profile']
             except KeyError as ke:
-                _LOGGER.warning(f"Error retrieving profile: %s", str(ke))
+                _LOGGER.warning(f"{self._name}: Error retrieving profile from {response}: {str(ke)}")
                 return False
 
             # Edit profile with settings from adapter
@@ -144,13 +150,12 @@ class PyKumo(PyKumoBase):
                     self._profile['wifiRSSI'] = None
                 self._profile['runState'] = status.get('runState', "unknown")
             except KeyError as ke:
-                _LOGGER.warning("Error retrieving adapter profile: %s", str(ke))
+                _LOGGER.warning(f"{self._name}: Error retrieving adapter profile from {response}: {str(ke)}")
                 return False
 
             # Edit profile with data from MHK2 if present
-            query = ['mhk2', 'status']
-            needed = ['indoorHumid']
-            response = self._retrieve_attributes(query, needed)
+            query = '{"c":{"mhk2":{"status":{}}}}'.encode('utf-8')
+            response = self._request(query)
             try:
                 self._mhk2 = response['r']['mhk2']
                 if isinstance(self._mhk2, dict):
@@ -169,7 +174,7 @@ class PyKumo(PyKumoBase):
                         self._sensors.append(mhk2_sensor_value)
             except (KeyError, TypeError) as e:
                 # We don't bailout here since the MHK2 component is optional.
-                _LOGGER.info(f"Error retrieving MHK2 status: {e}")
+                _LOGGER.info(f"{self._name}: Error retrieving MHK2 status from {response}: {e}")
                 pass
         return True
 
