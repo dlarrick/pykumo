@@ -43,7 +43,7 @@ class PyKumo(PyKumoBase):
 
     def _retrieve_attributes(
             self, query_path: list[str], needed: list[str],
-            do_top_query: bool = False) -> dict:
+            do_top_query: bool = False, stop_on_error: bool = False) -> dict:
         """ Try to retrieve a base query, but in specific error conditions retrieve specific
             needed attributes individually.
         """
@@ -68,6 +68,8 @@ class PyKumo(PyKumoBase):
                     if attribute in str(sub_response):
                         response = merge(response, sub_response)
                     else:
+                        if stop_on_error:
+                            break
                         _LOGGER.warning(
                             f"{self._name}: Did not get {attribute} from {attr_query}: {sub_response}")
         except Exception as e:
@@ -102,12 +104,15 @@ class PyKumo(PyKumoBase):
                 query = ['sensors', s_str]
                 needed = ['uuid', 'humidity', 'temperature', 'battery', 'rssi', 'txPower']
                 
-                response = self._retrieve_attributes(query, needed)
+                response = self._retrieve_attributes(query, needed, stop_on_error=True)
 
                 try:
                     sensor = response['r']['sensors'][s_str]
                     if isinstance(sensor, dict) and sensor.get('uuid'):
                         self._sensors.append(sensor)
+                    else:
+                        # No sensor found at this index; skip the rest
+                        break
                 except KeyError as ke:
                     _LOGGER.warning(f"{self._name}: Error retrieving sensors from {response}: {str(ke)}")
                     return False
