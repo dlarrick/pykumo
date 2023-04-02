@@ -41,14 +41,6 @@ class PyKumo(PyKumoBase):
         """
         super().__init__(name, addr, cfg_json, timeouts, serial)
 
-    def _retryable_response(self, response):
-        """
-        Check whether response is retryable
-        """
-        return (response.get('_api_error', "") == 'serializer_error' or
-                response.get('_api_error', "") == 'device_authentication_error' or
-                '__no_memory' in str(response))
-
     def _retrieve_attributes(
             self, query_path: list[str], needed: list[str],
             do_top_query: bool = True, stop_on_error: bool = False,
@@ -64,40 +56,21 @@ class PyKumo(PyKumoBase):
         try:
             response = None
             if do_top_query:
-                tries = 0
-                while tries < retries:
-                    response = self._request(query)
-                    if self._retryable_response(response):
-                        _LOGGER.info(f"Retry {tries} main query due to {response}")
-                        time.sleep(1.0)
-                        tries += 1
-                    else:
-                        break
+                response = self._request(query)
             if (not response or
                 response.get('_api_error', "") == 'serializer_error' or
-                    '__no_memory' in str(response)):
+                '__no_memory' in str(response)):
                 # Use individual attribute queries
                 response = {'r': {}}
                 for attribute in needed:
                     attr_query = base_query.replace(
                         '{}', '{"' + attribute + '":{}}').encode('utf-8')
-                    tries = 0
-                    while tries < retries:
-                        sub_response = self._request(attr_query)
-                        if self._retryable_response(response):
-                            _LOGGER.info(f"Retry {tries} sub query due to {response}")
-                            time.sleep(1.0)
-                            tries += 1
-                        else:
-                            break
-
+                    sub_response = self._request(attr_query)
                     if attribute in str(sub_response):
                         response = merge(response, sub_response)
                     else:
                         _LOGGER.warning(
                             f"{self._name}: Did not get {attribute} from {attr_query}: {sub_response}")
-                        if stop_on_error:
-                            break
         except Exception as e:
             _LOGGER.warning(
                 "Exception fetching %s: %s", base_query, str(e))
@@ -130,15 +103,12 @@ class PyKumo(PyKumoBase):
                 query = ['sensors', s_str]
                 needed = ['uuid', 'humidity', 'temperature', 'battery', 'rssi', 'txPower']
                 
-                response = self._retrieve_attributes(query, needed, stop_on_error=True)
+                response = self._retrieve_attributes(query, needed)
 
                 try:
                     sensor = response['r']['sensors'][s_str]
                     if isinstance(sensor, dict) and sensor.get('uuid'):
                         self._sensors.append(sensor)
-                    else:
-                        # No sensor found at this index; skip the rest
-                        break
                 except KeyError as ke:
                     _LOGGER.warning(f"{self._name}: Error retrieving sensors from {response}: {str(ke)}")
                     return False
