@@ -71,7 +71,7 @@ class PyKumoBase:
         token_param = {'m': token}
         try:
             with requests.Session() as session:
-                retries = Retry(total=3)
+                retries = Retry(total=3, backoff_factor=0.1)
                 session.mount('http://', HTTPAdapter(max_retries=retries))
                 _LOGGER.debug("Issue request %s %s", url, post_data)
                 response = session.put(
