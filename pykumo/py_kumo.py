@@ -67,13 +67,13 @@ class PyKumo(PyKumoBase):
                 tries = 0
                 while tries < retries:
                     response = self._request(query)
-                        if self._retryable_response(response):
-                            _LOGGER.info(f"Retry {tries} main query due to {response}")
-                            time.sleep(1.0)
-                            tries += 1
-            if (not response or
-                response.get('_api_error', "") == 'serializer_error' or
-                '__no_memory' in str(response)):
+                    if self._retryable_response(response):
+                        _LOGGER.info(f"Retry {tries} main query due to {response}")
+                        time.sleep(1.0)
+                        tries += 1
+                    else:
+                        break
+            if not response or self._retryable_response(response):
                 # Use individual attribute queries
                 response = {'r': {}}
                 for attribute in needed:
@@ -126,12 +126,15 @@ class PyKumo(PyKumoBase):
                 query = ['sensors', s_str]
                 needed = ['uuid', 'humidity', 'temperature', 'battery', 'rssi', 'txPower']
                 
-                response = self._retrieve_attributes(query, needed)
+                response = self._retrieve_attributes(query, needed, stop_on_error=True)
 
                 try:
                     sensor = response['r']['sensors'][s_str]
                     if isinstance(sensor, dict) and sensor.get('uuid'):
                         self._sensors.append(sensor)
+                    else:
+                        # No sensor found at this index; skip the rest
+                        break
                 except KeyError as ke:
                     _LOGGER.warning(f"{self._name}: Error retrieving sensors from {response}: {str(ke)}")
                     return False
