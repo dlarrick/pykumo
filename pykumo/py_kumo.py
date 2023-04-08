@@ -51,8 +51,7 @@ class PyKumo(PyKumoBase):
 
     def _retrieve_attributes(
             self, query_path: list[str], needed: list[str],
-            do_top_query: bool = False, stop_on_error: bool = False,
-            retries=3) -> dict:
+            do_top_query: bool = False, retries=3) -> dict:
         """ Try to retrieve a base query, but in specific error conditions retrieve specific
             needed attributes individually.
         """
@@ -126,7 +125,7 @@ class PyKumo(PyKumoBase):
                 query = ['sensors', s_str]
                 needed = ['uuid', 'humidity', 'temperature', 'battery', 'rssi', 'txPower']
                 
-                response = self._retrieve_attributes(query, needed, stop_on_error=True)
+                response = self._retrieve_attributes(query, needed)
 
                 try:
                     sensor = response['r']['sensors'][s_str]
