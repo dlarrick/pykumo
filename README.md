@@ -25,6 +25,15 @@ The MHK2 wall-mounted controller, if present, acts like a traditional thermostat
 ### Kumo Station
 Kumo Station allows controlling traditional HVAC equipment via the Kumo Cloud app, managing switchover between Kumo and external equipment. It also provides an outdoor temperature sensor. A Kumo Station has its own IP address.
 
+## Troubleshooting
+### WiFi
+The most common cause of flaky behavior is weak WiFi signal at the indoor unit. Try measuring WiFi strength (2.4 GHz only) with a phone app. Also try repositioning the Mitsubishi WiFi adapter within the unit, positioning it close to the plastic exterior rather than metal interior components.
+
+### API errors
+In early 2023 Mitsubishi appears to have made some change that makes the WiFi adapter less reliable. My educated guess is that it has a memory leak. See [Issue 105](https://github.com/dlarrick/hass-kumo/issues/105) in the hass-kumo repository for discussion.
+
+As a result of this issue, if you are seeing `serializer_error` or (especially) `__no_memory` errors consistently when performing operations, it's likely your indoor unit needs power-cycling. Unfortunately the easiest way is probably at the breaker.
+
 ## Interactive Use
 It's possible to use pykumo in an interactive shell to do debugging, investigation of possible new features, and so on.
 
