@@ -16,6 +16,8 @@ from .const import CACHE_INTERVAL_SECONDS, POSSIBLE_SENSORS
 from .py_kumo_base import PyKumoBase
 
 _LOGGER = logging.getLogger(__name__)
+ALL_FAN_SPEEDS=[
+    "superQuiet", "quiet", "low", "Low", "powerful", "superPowerful"]
 
 def merge(d, v):
     """
@@ -250,14 +252,16 @@ class PyKumo(PyKumoBase):
             speeds = self._profile['numberOfFanSpeeds']
         except KeyError:
             speeds = 5
-        if speeds not in (5, 3):
+        if speeds not in (5, 4, 3):
             _LOGGER.info(
                 "Unit reports a different number of fan speeds than "
-                "supported, %d != [5|3]. Please report which ones work!",
+                "supported, %d != [5|4|3]. Please report which ones work!",
                 self._profile['numberOfFanSpeeds'])
 
         if speeds == 3:
             valid_speeds = ["quiet", "low", "powerful"]
+        elif speeds == 4:
+            valid_speeds = ["quiet", "Low", "powerful", "superPowerful"]
         else:
             valid_speeds = ["superQuiet", "quiet", "low", "powerful", "superPowerful"]
         try:
@@ -481,10 +485,15 @@ class PyKumo(PyKumoBase):
         """ Change fan speed. Valid speeds: superQuiet, quiet, low, powerful,
             superPowerful, sometimes auto
         """
+        if speed not in ALL_FAN_SPEEDS:
+            _LOGGER.warning(
+                "Attempting to set invalid fan speed %s", speed)
+            return {}
         valid_speeds = self.get_fan_speeds()
         if speed not in valid_speeds:
-            _LOGGER.warning("Attempting to set invalid fan speed %s", speed)
-            return {}
+            _LOGGER.warning(
+                "Unit does not report fan speed %s as supported. "
+                "Setting anyway", speed)
         command = ('{"c": { "indoorUnit": { "status": { "fanSpeed": "%s" } } } }'
                    % speed).encode('utf-8')
         response = self._request(command)
