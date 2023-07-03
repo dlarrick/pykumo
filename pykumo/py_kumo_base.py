@@ -64,6 +64,9 @@ class PyKumoBase:
     def _request(self, post_data):
         """ Send request to configured unit and return response dict
         """
+        if not self._address:
+            _LOGGER.warning("Unit %s address not set", self._name)
+            return {}
         url = "http://" + self._address + "/api"
         token = self._token(post_data)
         headers = {'Accept': 'application/json, text/plain, */*',
