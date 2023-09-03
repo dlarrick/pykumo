@@ -485,7 +485,7 @@ class PyKumo(PyKumoBase):
         """ Change fan speed. Valid speeds: superQuiet, quiet, low, powerful,
             superPowerful, sometimes auto
         """
-        if speed not in ALL_FAN_SPEEDS:
+        if speed not in ALL_FAN_SPEEDS + ['auto']:
             _LOGGER.warning(
                 "Attempting to set invalid fan speed %s", speed)
             return {}
