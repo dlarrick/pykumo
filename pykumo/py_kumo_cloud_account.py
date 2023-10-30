@@ -60,14 +60,10 @@ class KumoCloudAccount:
         """ Parse needed fields from raw json and return dict representing
             a unit
         """
-        unit = {}
         fields = {'serial', 'label', 'address', 'password', 'cryptoSerial', 'mac', 'unitType'}
-        try:
-            for field in fields:
-                unit[field] = raw_unit[field]
-        except KeyError:
-            pass
-        return unit
+        # Not all fields are always present; e.g. 'address'
+        common_fields = fields & raw_unit.keys()
+        return {field: raw_unit[field] for field in common_fields}
 
     def _fetch_if_needed(self):
         """ Fetch configuration from server.
