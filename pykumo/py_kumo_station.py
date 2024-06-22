@@ -1,19 +1,13 @@
 """ Class used to represent Kumo Station units
 """
 
-import hashlib
-import base64
 import time
 import logging
-import requests
-from urllib3.util.retry import Retry
-from requests.adapters import HTTPAdapter
-from requests.exceptions import Timeout
-from getpass import getpass
 from .const import CACHE_INTERVAL_SECONDS
 from .py_kumo_base import PyKumoBase
 
 _LOGGER = logging.getLogger(__name__)
+
 
 class PyKumoStation(PyKumoBase):
     """ Talk to and control one KumoStation
@@ -32,11 +26,12 @@ class PyKumoStation(PyKumoBase):
         now = time.monotonic()
         if (now - self._last_status_update > CACHE_INTERVAL_SECONDS or
                 'mode' not in self._status):
-            query = '{"c":{"eqc":{"oat":{}}}}'.encode('utf-8') # This could be expanded to parse the entire payload
+            query = '{"c":{"eqc":{"oat":{}}}}'.encode('utf-8')
+            # This could be expanded to parse the entire payload
             response = self._request(query)
             raw_status = response
             try:
-                self._status = { 'outdoorTemp': raw_status['r']['eqc']['oat'] }
+                self._status = {'outdoorTemp': raw_status['r']['eqc']['oat']}
                 self._last_status_update = now
             except KeyError:
                 _LOGGER.warning("Error retrieving status")

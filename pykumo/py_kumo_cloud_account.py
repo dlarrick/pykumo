@@ -5,11 +5,9 @@ import json
 import logging
 import re
 import requests
-from urllib3.util.retry import Retry
 from requests.exceptions import Timeout
 from getpass import getpass
 from .py_kumo import PyKumo
-from .py_kumo_base import PyKumoBase
 from .py_kumo_station import PyKumoStation
 from .const import KUMO_CONNECT_TIMEOUT_SECONDS, KUMO_RESPONSE_TIMEOUT_SECONDS
 
@@ -22,6 +20,7 @@ KUMO_UNIT_TYPE_TO_CLASS = {
     "pead": PyKumo,
     "headless": PyKumoStation
 }
+
 
 class KumoCloudAccount:
     """ API to talk to KumoCloud servers
@@ -74,9 +73,9 @@ class KumoCloudAccount:
                        'Accept-Language': 'en-US,en',
                        'Content-Type': 'application/json'}
 
-            body = { "username": self._username,
-                     "password": self._password,
-                     "appVersion": "2.2.0" }
+            body = {"username": self._username,
+                    "password": self._password,
+                    "appVersion": "2.2.0"}
             try:
                 response = requests.post(self._url, headers=headers, data=json.dumps(body),
                                          timeout=(KUMO_CONNECT_TIMEOUT_SECONDS,
@@ -251,7 +250,7 @@ class KumoCloudAccount:
 
             kumo_class = KUMO_UNIT_TYPE_TO_CLASS.get(unitType, PyKumo)
             kumos[name] = kumo_class(name, self.get_address(unitSerial),
-                    self.get_credentials(unitSerial), timeouts, unitSerial)
+                                     self.get_credentials(unitSerial), timeouts, unitSerial)
 
         if init_update_status:
             for pk in kumos.values():

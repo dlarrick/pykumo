@@ -1,5 +1,5 @@
 # How many seconds to wait before re-fetching data from a unit
-CACHE_INTERVAL_SECONDS = 5
+CACHE_INTERVAL_SECONDS = 20
 
 # Magic related to generating the auth tokens
 W_PARAM = bytearray.fromhex('44c73283b498d432ff25f5c8e06a016aef931e68f0a00ea710e36e6338fb22db')
