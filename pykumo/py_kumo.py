@@ -1,23 +1,17 @@
 """ Class used to represent indoor units
 """
 
-import hashlib
-import base64
 import time
 import datetime
 import logging
-import requests
 from collections.abc import MutableMapping
-from urllib3.util.retry import Retry
-from requests.adapters import HTTPAdapter
-from requests.exceptions import Timeout
-from getpass import getpass
 from .const import CACHE_INTERVAL_SECONDS, POSSIBLE_SENSORS
 from .py_kumo_base import PyKumoBase
 
 _LOGGER = logging.getLogger(__name__)
-ALL_FAN_SPEEDS=[
+ALL_FAN_SPEEDS = [
     "superQuiet", "quiet", "low", "Low", "powerful", "superPowerful"]
+
 
 def merge(d, v):
     """
@@ -33,6 +27,7 @@ def merge(d, v):
             d[key] = v[key]
     return d
 
+
 class PyKumo(PyKumoBase):
     """ Talk to and control one indoor unit.
     """
@@ -41,7 +36,15 @@ class PyKumo(PyKumoBase):
     def __init__(self, name, addr, cfg_json, timeouts=None, serial=None):
         """ Constructor
         """
+        self._last_reboot = None
         super().__init__(name, addr, cfg_json, timeouts, serial)
+
+    def _rebootable_response(self, response):
+        """
+        Check whether response warrants immediate reboot of adapter
+        """
+        return (response.get('_api_error', "") == 'serializer_error' or
+                '__no_memory' in str(response))
 
     def _retryable_response(self, response):
         """
@@ -53,7 +56,7 @@ class PyKumo(PyKumoBase):
 
     def _retrieve_attributes(
             self, query_path: list[str], needed: list[str],
-            do_top_query: bool = False, retries=3) -> dict:
+            do_top_query: bool = True, retries=3) -> dict:
         """ Try to retrieve a base query, but in specific error conditions retrieve specific
             needed attributes individually.
         """
@@ -63,38 +66,61 @@ class PyKumo(PyKumoBase):
         base_query += '}' * (len(query_path) + 2)
         query = base_query.encode('utf-8')
         try:
+            should_reboot = False
             response = None
             if do_top_query:
                 tries = 0
                 while tries < retries:
                     response = self._request(query)
+                    if self._rebootable_response(response):
+                        should_reboot = True
+                        break
                     if self._retryable_response(response):
                         _LOGGER.info(f"Retry {tries} main query due to {response}")
                         time.sleep(1.0)
                         tries += 1
                     else:
                         break
-            if not response or self._retryable_response(response):
+            built_response = {'r': {}}
+            if not should_reboot and (not response or self._retryable_response(response)):
                 # Use individual attribute queries
-                response = {'r': {}}
                 for attribute in needed:
+                    if should_reboot:
+                        break
                     attr_query = base_query.replace(
                         '{}', '{"' + attribute + '":{}}').encode('utf-8')
                     tries = 0
                     while tries < retries:
                         sub_response = self._request(attr_query)
+                        if self._rebootable_response(response):
+                            should_reboot = True
+                            break
                         if self._retryable_response(response):
-                            _LOGGER.info(f"Retry {tries} sub query due to {response}")
+                            _LOGGER.info(f"Retry {tries} sub query due to {sub_response}")
                             time.sleep(1.0)
                             tries += 1
                         else:
                             break
 
                     if attribute in str(sub_response):
-                        response = merge(response, sub_response)
+                        built_response = merge(built_response, sub_response)
                     else:
                         _LOGGER.warning(
-                            f"{self._name}: Did not get {attribute} from {attr_query}: {sub_response}")
+                            f"{self._name}: Did not get {attribute} from {attr_query}: "
+                            f"{sub_response}")
+            if built_response.get('r'):
+                # Got at least some good sub-responses
+                response = built_response
+            now = datetime.datetime.now()
+            if (should_reboot and
+                (not self._last_reboot or
+                 self._last_reboot < now - datetime.timedelta(minutes=30))):
+                # Attempt to reboot the adapter
+                _LOGGER.warning(f"{self._name}: Attempting to reboot Kumo adapter")
+                self._last_reboot = now
+                self.do_reboot()
+                time.sleep(5.0)
+                return self._retrieve_attributes(query_path, needed, do_top_query, retries)
         except Exception as e:
             _LOGGER.warning(
                 "Exception fetching %s: %s", base_query, str(e))
@@ -118,7 +144,8 @@ class PyKumo(PyKumoBase):
                 self._status = raw_status['r']['indoorUnit']['status']
                 self._last_status_update = now
             except KeyError as ke:
-                _LOGGER.warning(f"{self._name}: Error retrieving status from {response}: {str(ke)}")
+                _LOGGER.warning(f"{self._name}: Error retrieving status from {response}: "
+                                f"{str(ke)}")
                 return False
 
             self._sensors = []
@@ -126,7 +153,7 @@ class PyKumo(PyKumoBase):
                 s_str = f'{s}'
                 query = ['sensors', s_str]
                 needed = ['uuid', 'humidity', 'temperature', 'battery', 'rssi', 'txPower']
-                
+
                 response = self._retrieve_attributes(query, needed)
 
                 try:
@@ -137,7 +164,8 @@ class PyKumo(PyKumoBase):
                         # No sensor found at this index; skip the rest
                         break
                 except KeyError as ke:
-                    _LOGGER.warning(f"{self._name}: Error retrieving sensors from {response}: {str(ke)}")
+                    _LOGGER.warning(f"{self._name}: Error retrieving sensors from {response}: "
+                                    f"{str(ke)}")
                     return False
 
             query = ['indoorUnit', 'profile']
@@ -150,7 +178,8 @@ class PyKumo(PyKumoBase):
             try:
                 self._profile = response['r']['indoorUnit']['profile']
             except KeyError as ke:
-                _LOGGER.warning(f"{self._name}: Error retrieving profile from {response}: {str(ke)}")
+                _LOGGER.warning(f"{self._name}: Error retrieving profile from {response}: "
+                                f"{str(ke)}")
                 return False
 
             # Edit profile with settings from adapter
@@ -178,7 +207,8 @@ class PyKumo(PyKumoBase):
                     self._profile['wifiRSSI'] = None
                 self._profile['runState'] = status.get('runState', "unknown")
             except KeyError as ke:
-                _LOGGER.warning(f"{self._name}: Error retrieving adapter profile from {response}: {str(ke)}")
+                _LOGGER.warning(f"{self._name}: Error retrieving adapter profile from {response}: "
+                                f"{str(ke)}")
                 return False
 
             # Edit profile with data from MHK2 if present
@@ -375,19 +405,19 @@ class PyKumo(PyKumoBase):
         """ Get hold status similar to representation on kumo app and MHK2 display """
         end_time = self.get_hold_time()
         # mhk returns 3774499593 for "permanent hold"
-        if end_time == None:
+        if end_time is None:
             _LOGGER.warning("End time not available")
             hold_status = ""
         elif end_time == 3774499593:
             hold_status = "permanent hold"
         elif end_time == 0:
-            hold_status =  "following schedule"
+            hold_status = "following schedule"
         elif (end_time - time.time()) > 82800:  # 23 hours
             days = round((end_time - time.time()) / 86400)
-            hold_status =  f"hold for {days} days"
+            hold_status = f"hold for {days} days"
         else:
             dt = datetime.datetime.fromtimestamp(end_time)
-            hold_status =  f"hold until {dt.strftime('%H:%M')}"
+            hold_status = f"hold until {dt.strftime('%H:%M')}"
         return hold_status
 
     def has_dry_mode(self):
@@ -456,7 +486,7 @@ class PyKumo(PyKumoBase):
                    mode).encode('utf-8')
         response = self._request(command)
         self._status['mode'] = mode
-        self._last_status_update = time.monotonic()
+        self._last_status_update = time.monotonic() - 2 * CACHE_INTERVAL_SECONDS
         return response
 
     def set_heat_setpoint(self, setpoint):
@@ -467,7 +497,7 @@ class PyKumo(PyKumoBase):
                    setpoint).encode('utf-8')
         response = self._request(command)
         self._status['spHeat'] = setpoint
-        self._last_status_update = time.monotonic()
+        self._last_status_update = time.monotonic() - 2 * CACHE_INTERVAL_SECONDS
         return response
 
     def set_cool_setpoint(self, setpoint):
@@ -478,7 +508,7 @@ class PyKumo(PyKumoBase):
                    setpoint).encode('utf-8')
         response = self._request(command)
         self._status['spCool'] = setpoint
-        self._last_status_update = time.monotonic()
+        self._last_status_update = time.monotonic() - 2 * CACHE_INTERVAL_SECONDS
         return response
 
     def set_fan_speed(self, speed):
@@ -498,7 +528,7 @@ class PyKumo(PyKumoBase):
                    % speed).encode('utf-8')
         response = self._request(command)
         self._status['fanSpeed'] = speed
-        self._last_status_update = time.monotonic()
+        self._last_status_update = time.monotonic() - 2 * CACHE_INTERVAL_SECONDS
         return response
 
     def set_vane_direction(self, direction):
@@ -513,7 +543,7 @@ class PyKumo(PyKumoBase):
                    % direction).encode('utf-8')
         response = self._request(command)
         self._status['vaneDir'] = direction
-        self._last_status_update = time.monotonic()
+        self._last_status_update = time.monotonic() - 2 * CACHE_INTERVAL_SECONDS
         return response
 
     def set_hold(self, end_time):
@@ -524,5 +554,13 @@ class PyKumo(PyKumoBase):
         command = ('{"c":{"mhk2":{"hold":{"adapter":{"endTime": %d}}}}}'
                    % end_time).encode('utf-8')
         response = self._request(command)
-        self._last_status_update = time.monotonic()
+        self._last_status_update = time.monotonic() - 2 * CACHE_INTERVAL_SECONDS
+        return response
+
+    def do_reboot(self):
+        """ Issue a reboot command to the indoor unit's adapter.
+        """
+        command = ('{"c":{"adapter":{"status":{"runState":"reboot"}}}}').encode('utf-8')
+        response = self._request(command)
+        self._last_status_update = time.monotonic() - 2 * CACHE_INTERVAL_SECONDS
         return response

@@ -9,10 +9,11 @@ import requests
 from urllib3.util.retry import Retry
 from requests.adapters import HTTPAdapter
 from requests.exceptions import Timeout
-from getpass import getpass
-from .const import CACHE_INTERVAL_SECONDS, W_PARAM, S_PARAM, UNIT_CONNECT_TIMEOUT_SECONDS, UNIT_RESPONSE_TIMEOUT_SECONDS
+from .const import (CACHE_INTERVAL_SECONDS, W_PARAM, S_PARAM, UNIT_CONNECT_TIMEOUT_SECONDS,
+                    UNIT_RESPONSE_TIMEOUT_SECONDS)
 
 _LOGGER = logging.getLogger(__name__)
+
 
 class PyKumoBase:
     """ Talk to and control one indoor unit.
@@ -80,7 +81,7 @@ class PyKumoBase:
                 response = session.put(
                     url, headers=headers, data=post_data, params=token_param,
                     timeout=self._timeouts)
-                return response.json()            
+                return response.json()
         except Timeout as ex:
             _LOGGER.warning("Timeout issuing request %s: %s", url, str(ex))
         except Exception as ex:

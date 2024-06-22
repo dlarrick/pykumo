@@ -27,12 +27,12 @@ Kumo Station allows controlling traditional HVAC equipment via the Kumo Cloud ap
 
 ## Troubleshooting
 ### WiFi
-The most common cause of flaky behavior is weak WiFi signal at the indoor unit. Try measuring WiFi strength (2.4 GHz only) with a phone app. Also try repositioning the Mitsubishi WiFi adapter within the unit, positioning it close to the plastic exterior rather than metal interior components.
+The most common cause of flaky behavior is weak WiFi signal at the indoor unit. Try measuring WiFi strength (2.4 GHz only) with a phone app. Also try repositioning the Mitsubishi WiFi adapter within the unit, positioning it close to the plastic exterior rather than metal interior components. Users have also reported that isolating the indoor units to their own subnet and WiFi SSID can improve behavior.
 
 ### API errors
 In early 2023 Mitsubishi appears to have made some change that makes the WiFi adapter less reliable. My educated guess is that it has a memory leak. See [Issue 105](https://github.com/dlarrick/hass-kumo/issues/105) in the hass-kumo repository for discussion.
 
-As a result of this issue, if you are seeing `serializer_error` or (especially) `__no_memory` errors consistently when performing operations, it's likely that your indoor unit needs power-cycling. Unfortunately the easiest way is probably at the circuit breaker for the entire mini-split system.
+As of mid 2024, pykumo will issue a `reboot` command to the indoor unit's WiFi adapter (at most once every 30 minutes) if `serializer_error` or `__no_memory` errors occur when performing operations.
 
 ## Interactive Use
 It's possible to use pykumo in an interactive shell to do debugging, investigation of possible new features, and so on.
@@ -71,6 +71,13 @@ You can print the internal state of the indoor unit object, which includes the J
 import pprint
 pp = pprint.PrettyPrinter()
 pp.pprint(unit.__dict__)
+```
+
+### Reboot a unit's WiFi adapter
+If an indoor unit is reachable but returns error responses to legitimate commands, a reboot may help.
+
+```
+unit.do_reboot()
 ```
 
 ### Query or Command an Indoor Unit Directly
