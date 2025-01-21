@@ -64,6 +64,7 @@ class ScheduleSettings:
 
     @classmethod
     def from_json(cls, settings_json):
+        """ Read a ScheduleSettings from a JSON-encodable dict. """
         return cls(
             mode=settings_json['mode'],
             set_point_cool=settings_json['spCool'],
@@ -111,34 +112,34 @@ class ScheduleEvent:
 
     @classmethod
     def from_json(cls, schedule_json):
-        settings = ScheduleSettings.from_json(schedule_json['settings'])
-        days_str = schedule_json['day']
-
-        # Parse scheduled day, e.g., "MoTuWe"
-        days = [ALL_DAY_ABBRS.index(f'{days_str[i:i+2]}')
-                for i in range(0, len(days_str), 2)]
+        """ Read a ScheduleEvent from a JSON-encodable dict. """
+        def _parse_days(days_str):
+            """ Parse scheduled day (e.g., "MoTuWe"). """
+            return [ALL_DAY_ABBRS.index(days_str[i:i+2])
+                    for i in range(0, len(days_str), 2)]
         
-        # Parse scheduled time, e.g., "0700"
-        scheduled_time_str = schedule_json['time']
-        scheduled_time = datetime.time(
-            hour=int(scheduled_time_str[:2]),
-            minute=int(scheduled_time_str[2:])
-        )
+        def _parse_time(scheduled_time_str):
+            """ Parse scheduled time (e.g., "0700"). """
+            return datetime.time(
+                hour=int(scheduled_time_str[:2]),
+                minute=int(scheduled_time_str[2:])
+            )
 
         return cls(
             active=schedule_json['active'],
             in_use=schedule_json['inUse'],
-            scheduled_days=days,
-            scheduled_time=scheduled_time,
-            settings=settings,
+            scheduled_days=_parse_days(schedule_json['day']),
+            scheduled_time=_parse_time(schedule_json['time']),
+            settings=ScheduleSettings.from_json(schedule_json['settings']),
         )
 
 class UnitSchedule:
-    """ Programmed schedule for a single sensors.
+    """ Programmed schedule for a single sensor.
 
     This contains a collection of ScheduleEvent objects, accessible via the
-    events_by_slot attribute or iteration. fetch() must be called in order to
-    (re)populate this structure.
+    events_by_slot attribute or iteration. Each ScheduleEvent is attached to a
+    "slot" where slot names appear to be stringified integers. fetch() must be
+    called in order to (re)populate this structure.
 
     Note that limited validation is performed at this time.
     """
@@ -178,7 +179,7 @@ class UnitSchedule:
         try:
             events = response['r']['indoorUnit']['schedule']['events']
         except KeyError:
-            return
+            raise ValueError("Schedule information not available.")
 
         self.events_by_slot = {
             slot: ScheduleEvent.from_json(schedule_json)
@@ -198,7 +199,7 @@ class UnitSchedule:
             command = json.dumps(json_dict).encode('utf-8')
             response = self.pykumo._request(command)
             if '_api_error' in response:
-                raise RuntimeError(f"API error: {response!r}")
+                raise ValueError(f"API error: {response!r}")
 
 class PyKumo(PyKumoBase):
     """ Talk to and control one indoor unit.
