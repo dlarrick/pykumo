@@ -48,7 +48,7 @@ class ScheduleSettings:
     fan_speed: str
 
     def to_json_dict(self):
-        """ Render this ScheduleEvent in a JSON-like dict. """
+        """ Render this ScheduleEvent in a JSON-encodable dict. """
         json_dict = {
             "mode": self.mode,
             "vaneDir": self.vane_dir,
@@ -98,7 +98,7 @@ class ScheduleEvent:
         return self.scheduled_time.strftime("%H%M")
 
     def to_json_dict(self):
-        """ Render this ScheduleEvent in a JSON-like dict. """
+        """ Render this ScheduleEvent in a JSON-encodable dict. """
         json_dict = {
             "active": self.active,
             "inUse": self.in_use,
@@ -155,7 +155,7 @@ class UnitSchedule:
             yield schedule_event
 
     def to_json_dict(self, slots: set[str]):
-        """ Render this ScheduleEvent in a JSON-like dict. """
+        """ Render this ScheduleEvent in a JSON-encodable dict. """
         return {
             "events": 
                 {
