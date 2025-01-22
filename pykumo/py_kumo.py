@@ -1,13 +1,13 @@
 """ Class used to represent indoor units
 """
 
-from dataclasses import dataclass
 import datetime
 import json
-import time
-import datetime
 import logging
+import time
 from collections.abc import MutableMapping
+from dataclasses import dataclass
+
 from .const import CACHE_INTERVAL_SECONDS, POSSIBLE_SENSORS
 from .py_kumo_base import PyKumoBase
 
@@ -30,7 +30,6 @@ def merge(d, v):
         else:
             d[key] = v[key]
     return d
-
 
 
 @dataclass
@@ -63,7 +62,7 @@ class ScheduleSettings:
         return json_dict
 
     @classmethod
-    def from_json(cls, settings_json):
+    def from_json(cls, settings_json: dict):
         """ Read a ScheduleSettings from a JSON-encodable dict. """
         return cls(
             mode=settings_json['mode'],
@@ -72,6 +71,7 @@ class ScheduleSettings:
             vane_dir=settings_json['vaneDir'],
             fan_speed=settings_json['fanSpeed']
         )
+
 
 @dataclass
 class ScheduleEvent:
@@ -111,18 +111,18 @@ class ScheduleEvent:
         return json_dict
 
     @classmethod
-    def from_json(cls, schedule_json):
+    def from_json(cls, schedule_json: dict):
         """ Read a ScheduleEvent from a JSON-encodable dict. """
-        def _parse_days(days_str):
+        def _parse_days(days: str):
             """ Parse scheduled day (e.g., "MoTuWe"). """
-            return [ALL_DAY_ABBRS.index(days_str[i:i+2])
-                    for i in range(0, len(days_str), 2)]
-        
-        def _parse_time(scheduled_time_str):
+            return [
+                ALL_DAY_ABBRS.index(days[i:i + 2]) for i in range(0, len(days), 2)
+            ]
+
+        def _parse_time(scheduled_time: str):
             """ Parse scheduled time (e.g., "0700"). """
             return datetime.time(
-                hour=int(scheduled_time_str[:2]),
-                minute=int(scheduled_time_str[2:])
+                hour=int(scheduled_time[:2]), minute=int(scheduled_time[2:])
             )
 
         return cls(
@@ -132,6 +132,7 @@ class ScheduleEvent:
             scheduled_time=_parse_time(schedule_json['time']),
             settings=ScheduleSettings.from_json(schedule_json['settings']),
         )
+
 
 class UnitSchedule:
     """ Programmed schedule for a single sensor.
@@ -167,10 +168,11 @@ class UnitSchedule:
         }
 
     def fetch(self):
-        """ Fetch the latest schedule for this sensor.
-        
+        """Fetch the latest schedule for this sensor.
+
         Note that changes to any ScheduleEvent and ScheduleSettings from a
-        previous fetch() will no longer have any effect.
+        previous fetch() will be disconnected from this object and no longer
+        have any effect.
         """
         self.events_by_slot.clear()
 
@@ -179,7 +181,7 @@ class UnitSchedule:
         try:
             events = response['r']['indoorUnit']['schedule']['events']
         except KeyError:
-            raise ValueError("Schedule information not available.")
+            raise ValueError(f"Schedule information not available: {response!r}")
 
         self.events_by_slot = {
             slot: ScheduleEvent.from_json(schedule_json)
@@ -200,6 +202,7 @@ class UnitSchedule:
             response = self.pykumo._request(command)
             if '_api_error' in response:
                 raise ValueError(f"API error: {response!r}")
+
 
 class PyKumo(PyKumoBase):
     """ Talk to and control one indoor unit.
