@@ -34,10 +34,11 @@ class PyKumo(PyKumoBase):
     """
     # pylint: disable=R0904, R0902
 
-    def __init__(self, name, addr, cfg_json, timeouts=None, serial=None):
+    def __init__(self, name, addr, cfg_json, timeouts=None, serial=None, use_schedule: bool = False):
         """ Constructor
         """
         self._last_reboot = None
+        self._unit_schedule = UnitSchedule(self) if use_schedule else None
         super().__init__(name, addr, cfg_json, timeouts, serial)
 
     def _rebootable_response(self, response):
@@ -235,6 +236,10 @@ class PyKumo(PyKumoBase):
                 # We don't bailout here since the MHK2 component is optional.
                 _LOGGER.info(f"{self._name}: Error retrieving MHK2 status from {response}: {e}")
                 pass
+
+        if self._unit_schedule:
+            self._unit_schedule.fetch()
+
         return True
 
     def get_mode(self):
@@ -355,12 +360,9 @@ class PyKumo(PyKumoBase):
             val = None
         return val
 
-    def get_unit_schedule(self):
+    def get_unit_schedule(self) -> UnitSchedule | None:
         """ Retrieve the program (UnitSchedule) from sensor, if any. """
-        unit_schedule = UnitSchedule(self)
-        unit_schedule.fetch()
-        
-        return unit_schedule
+        return self._unit_schedule
 
     def get_sensor_battery(self):
         """ Last retrieved battery percentage from sensor, if any """
