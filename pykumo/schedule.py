@@ -18,7 +18,7 @@ class ScheduleSettings:
     vane_dir: str
     fan_speed: str
 
-    def to_json_dict(self):
+    def to_json_dict(self) -> dict:
         """ Render this ScheduleEvent in a JSON-encodable dict. """
         json_dict = {
             "mode": self.mode,
@@ -61,16 +61,16 @@ class ScheduleEvent:
     scheduled_time: datetime.time
     settings: ScheduleSettings
 
-    def _formatted_days(self):
+    def _formatted_days(self) -> str:
         """ Format the days in appropriate Kumo JSON. """
         days = sorted(set(self.scheduled_days))
         return "".join(ALL_DAY_ABBRS[index] for index in days)
 
-    def _formatted_time(self):
+    def _formatted_time(self) -> str:
         """ Format the setpoint time in appropriate Kumo JSON. """
         return self.scheduled_time.strftime("%H%M")
 
-    def to_json_dict(self):
+    def to_json_dict(self) -> dict:
         """ Render this ScheduleEvent in a JSON-encodable dict. """
         json_dict = {
             "active": self.active,
@@ -128,7 +128,7 @@ class UnitSchedule:
         for slot, schedule_event in sorted(self.events_by_slot.items()):
             yield schedule_event
 
-    def to_json_dict(self, slots: set[str]):
+    def to_json_dict(self, slots: set[str]) -> dict:
         """ Render this ScheduleEvent in a JSON-encodable dict. """
         return {
             "events":
@@ -139,7 +139,7 @@ class UnitSchedule:
                 }
         }
 
-    def fetch(self):
+    def fetch(self) -> None:
         """Fetch the latest schedule for this sensor.
 
         Note that changes to any ScheduleEvent and ScheduleSettings from a
