@@ -38,8 +38,8 @@ class ScheduleSettings:
         """ Read a ScheduleSettings from a JSON-encodable dict. """
         return cls(
             mode=settings_json["mode"],
-            set_point_cool=settings_json["spCool"],
-            set_point_heat=settings_json["spHeat"],
+            set_point_cool=settings_json.get("spCool"),
+            set_point_heat=settings_json.get("spHeat"),
             vane_dir=settings_json["vaneDir"],
             fan_speed=settings_json["fanSpeed"]
         )
