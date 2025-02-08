@@ -1,3 +1,4 @@
+import collections.abc
 from dataclasses import dataclass
 import datetime
 import json
@@ -106,15 +107,33 @@ class ScheduleEvent:
         )
 
 
-class UnitSchedule:
+class UnitSchedule(collections.abc.MutableMapping):
     """ Programmed schedule for a single sensor.
 
-    This contains a collection of ScheduleEvent objects, accessible via the
-    events_by_slot attribute or iteration. Each ScheduleEvent is attached to a
-    "slot" where slot names appear to be stringified integers. fetch() must be
-    called in order to (re)populate this structure.
+    This contains a collection of ScheduleEvent objects. Each ScheduleEvent is
+    keyed by a "slot" where slot names are stringified integers. These can be
+    accessed as if the UnitSchedule is a dictionary. fetch() must be called
+    first in order to (re)populate this structure. push() must be called to
+    update the schedule on the PyKumo device.
 
     Note that only limited validation is performed at this time.
+
+    Examples
+    --------
+    
+        # Assume you already have a PyKumo object called pykumo
+        unit_schedule = UnitSchedule(pykumo)
+        # Populate slot entries from the PyKumo unit -- without this,
+        # everything else will fail.
+        unit_schedule.fetch()
+        # Now we can view and manipulate those entries.
+        for slot, event_schedule in unit_schedule.items():
+            print(slot, event_schedule)
+        (...)
+        # For example, this will activate the ScheduleEvent in the first slot.
+        unit_schedule["1"].active = True
+        # Push the schedule back to the PyKumo unit so it will take effect.
+        unit_schedule.push()
     """
     def __init__(self, pykumo: "PyKumo"):
         self.pykumo = pykumo
@@ -122,12 +141,50 @@ class UnitSchedule:
         # All schedule events for this unit, indexed by slot name
         self.events_by_slot: dict[str, ScheduleEvent] = {}
 
-    def __iter__(self):
-        """ Iterate over all ScheduleEvent obejcts in this schedule. """
-        # Make the order consistent.
-        for slot, schedule_event in sorted(self.events_by_slot.items()):
-            yield schedule_event
+    #
+    # Methods to make UnitSchedule dict-like.
+    #
+    def __getitem__(self, slot: str) -> ScheduleEvent:
+        """ Get a ScheduleEvent for a specific slot. """
+        if not isinstance(slot, str):
+            raise TypeError(f"Expected slot to be a slot name string, got {slot!r}")
+        return self.events_by_slot[slot]
 
+    def __setitem__(self, slot: str, value: ScheduleEvent):
+        """ Set a ScheduleEvent in a specific slot. """
+        if not isinstance(slot, str):
+            raise TypeError(f"Expected slot to be a slot name string, got {slot!r}")
+        if not isinstance(value, ScheduleEvent):
+            raise TypeError(f"Expected value to be a ScheduleEvent, got {value!r}")
+        if slot not in self.events_by_slot:
+            raise ValueError(f"Invalid slot name {slot!r}, must be one of the existing slot names.")
+        self.events_by_slot[slot] = value
+
+    def __delitem__(self, slot: str):
+        """ Deactivates the ScheduleEvent in a slot. 
+        
+        Note that slots cannot actually be deleted.
+        """
+        if not isinstance(slot, str):
+            raise TypeError(f"Expected slot to be a slot name string, got {slot!r}")
+        if slot not in self.events_by_slot:
+            raise ValueError(f"Invalid slot name {slot!r}, must be one of the existing slot names.")
+        
+        self.events_by_slot[slot].active = False
+        self.events_by_slot[slot].in_use = False
+
+    def __len__(self) -> int:
+        """ Returns the number of slots in this UnitSchedule. """
+        return len(self.events_by_slot)
+
+    def __iter__(self):
+        """ Iterate over all slots this schedule. """
+        # Make the order consistent.
+        yield from sorted(self.events_by_slot.keys())
+
+    #
+    # Methods for synchronizing with PyKumo units.
+    #
     def to_json_dict(self, slots: set[str]) -> dict:
         """ Render this ScheduleEvent in a JSON-encodable dict. """
         return {
