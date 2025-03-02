@@ -185,14 +185,18 @@ class UnitSchedule(collections.abc.MutableMapping):
     #
     # Methods for synchronizing with PyKumo units.
     #
-    def to_json_dict(self, slots: set[str]) -> dict:
-        """ Render this ScheduleEvent in a JSON-encodable dict. """
+    def to_json_dict(self, slots: set[str] | None = None) -> dict:
+        """ Render this ScheduleEvent in a JSON-encodable dict. 
+        
+        If slots is specified, only include those slots. Otherwise, include all
+        slots in this schedule.
+        """
         return {
             "events":
                 {
                     slot: schedule_event.to_json_dict()
                     for (slot, schedule_event) in self.events_by_slot.items()
-                    if slot in slots
+                    if slots is None or slot in slots
                 }
         }
 
