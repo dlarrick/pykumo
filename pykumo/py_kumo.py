@@ -237,7 +237,7 @@ class PyKumo(PyKumoBase):
                 _LOGGER.info(f"{self._name}: Error retrieving MHK2 status from {response}: {e}")
                 pass
 
-        if self._unit_schedule:
+        if self._unit_schedule is not None:
             self._unit_schedule.fetch()
 
         return True
