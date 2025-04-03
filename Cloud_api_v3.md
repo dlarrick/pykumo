@@ -9,6 +9,12 @@ The old API is used by PyKumo solely to obtain sufficient information to communi
 
 This document is published in an effort to discover enough of the v3 API to allow pykumo to continue to monitor and control users' indoor units via their local API. It could also serve as a guide for developing a library that monitors and controls units via the cloud.
 
+### Remaining to be discovered
+
+Two critical pieces of information that are required for local communication with the indoor units are missing. These are:
+- IP address. Technically this is not required, since the user could provide it during setup. This information has proven to be missing and/or unreliable for some users.
+- Indoor unit password. This piece is critical, and I've yet to find it in any of the responses that I've tried.
+
 ## Hostname
 The scheme and hostname for all endpoints described below is https://app-prod.kumocloud.com/
 
