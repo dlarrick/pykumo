@@ -111,7 +111,8 @@ Details to-be-documented.
 
 The **Collection** endpoint returns a list of "sites" associated with the login. Presumably these are separate installations perhaps at different addresses. Example:
 
-`[
+```
+[
   {
     "id": "<guid>",
     "name": "<redacted>",
