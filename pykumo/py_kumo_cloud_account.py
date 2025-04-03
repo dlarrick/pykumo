@@ -229,7 +229,7 @@ class KumoCloudAccount:
 
         return None
 
-    def make_pykumos(self, timeouts=None, init_update_status=True):
+    def make_pykumos(self, timeouts=None, init_update_status=True, use_schedule=False):
         """ Return a dict mapping names of all indoor units to newly-created
         `PyKumoBase` objects
         """
@@ -249,8 +249,14 @@ class KumoCloudAccount:
             unitType = self.get_unit_type(unitSerial)
 
             kumo_class = KUMO_UNIT_TYPE_TO_CLASS.get(unitType, PyKumo)
-            kumos[name] = kumo_class(name, self.get_address(unitSerial),
-                                     self.get_credentials(unitSerial), timeouts, unitSerial)
+            kumos[name] = kumo_class(
+                name=name,
+                addr=self.get_address(unitSerial),
+                cfg_json=self.get_credentials(unitSerial),
+                timeouts=timeouts,
+                serial=unitSerial,
+                use_schedule=use_schedule,
+            )
 
         if init_update_status:
             for pk in kumos.values():
