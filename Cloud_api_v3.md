@@ -115,7 +115,10 @@ Details to-be-documented.
 - ?? `/v3/sites/transfers/pending`
 - ?? `/v3/notifications/unseen-count`
 
-The **Collection** endpoint returns a list of "sites" associated with the login. Presumably these are separate installations perhaps at different addresses. Example:
+### Collection Endpoint
+The **Collection** endpoint returns a list of "sites" associated with the login. Presumably these are separate installations perhaps at different addresses. These are called _Locations_ in the Comfort app.
+
+Example:
 
 ```
 [
@@ -136,7 +139,11 @@ The **Collection** endpoint returns a list of "sites" associated with the login.
 
 The important information here is `id` which is the `{site-id}` for several of the remaining API calls.
 
-The purpose of the 2 remaining site-related endpoints is unknown.
+### Pending Transfers
+In the app, a Location can be transferred to a new owner. This is done by email address, and this endpoint allows the app to notify a user about an incoming transfer request.
+
+### Unseen Notifications
+This populates the Red Dot on the Notification Bell in the Comfort app.
 
 ## Per-site
 
