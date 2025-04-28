@@ -14,6 +14,7 @@ This document is published in an effort to discover enough of the v3 API to allo
 Two critical pieces of information that are required for local communication with the indoor units are missing. These are:
 - IP address. Technically this is not required, since the user could provide it during setup. This information has proven to be missing and/or unreliable for some users.
 - Indoor unit password. This piece is critical, and I've yet to find it in any of the responses that I've tried.
+- PATCH endpoint structure
 
 ## Hostname
 The scheme and hostname for all endpoints described below is https://app-prod.kumocloud.com/
@@ -145,7 +146,7 @@ In the app, a Location can be transferred to a new owner. This is done by email 
 ### Unseen Notifications
 This populates the Red Dot on the Notification Bell in the Comfort app.
 
-## Per-site
+## Site endpoints
 
 **Endpoints**
 - /v3/sites/{site-id}
@@ -154,15 +155,230 @@ This populates the Red Dot on the Notification Bell in the Comfort app.
 - /v3/sites/{site-id}/groups
 
 `{site-id}` is the `id` GUID returned from the `/v3/sites/` collection endpoint.
-Description TBD
 
-## Per-zone
+### sites/{site-id}
+```
+{
+    "id": "<site-id>",
+    "name": "<redacted>",
+    "isActive": true,
+    "createdAt": "2025-03-25T19:19:27.828Z",
+    "updatedAt": "2025-04-08T19:10:33.928Z",
+    "address": "<redacted>",
+    "address2": "<redacted>",
+    "city": "<redacted>",
+    "state": "<redacted>",
+    "zip": "<redacted>",
+    "country": "<redacted>",
+    "favorite": false,
+    "schedulesEnabled": true,
+    "notificationsEnabled": true,
+    "requiresAddressUpdate": false,
+    "mak": "<redacted?>",
+    "baseMAK": null
+}
+```
+
+### sites/{site-id}/groups
+
+**minRuntime**: the minimum time the system should run in heating or cooling mode before switching.
+Available values in the app: 10, 20, 30, 40 minutes
+
+**maxStandby**: the maximum time your system should wait in heating or cooling mode before switching.
+Available values in the app: 30 minutes, 1, 2, 3, 4 hours
+```
+[
+    {
+        "id": "<group-id>",
+        "name": "<redacted>",
+        "isActive": true,
+        "createdAt": "2025-04-08T16:21:44.662Z",
+        "updatedAt": "2025-04-08T16:25:01.306Z",
+        "systemChangeoverEnabled": true,
+        "minRuntime": 30,
+        "maxStandby": 60
+    }
+]
+```
+
+### sites/{site-id}/zones
+```
+[
+    {
+        "id": "<zone-id>",
+        "name": "First Floor",
+        "isActive": true,
+        "group": {
+            "id": "<group-id>",
+            "name": "<redacted>",
+            "isActive": true,
+            "createdAt": "2025-04-08T16:21:44.662Z",
+            "updatedAt": "2025-04-08T16:25:01.306Z",
+            "systemChangeoverEnabled": true,
+            "minRuntime": 30,
+            "maxStandby": 60
+        },
+        "adapter": {
+            "id": "<adapter-id>",
+            "deviceSerial": "<adapter-serial>",
+            "isSimulator": false,
+            "roomTemp": 22,
+            "spCool": 23,
+            "spHeat": 21.5,
+            "spAuto": null,
+            "humidity": 41,
+            "scheduleOwner": "adapter",
+            "power": 1,
+            "operationMode": "autoHeat",
+            "connected": true,
+            "hasSensor": false,
+            "hasMhk2": true,
+            "timeZone": "America/Los_Angeles",
+            "isHeadless": false,
+            "lastStatusChangeAt": "2025-04-05T17:41:41.644Z",
+            "createdAt": "2025-03-29T00:20:20.730Z",
+            "updatedAt": "2025-04-09T20:01:46.080Z"
+        },
+        "createdAt": "2025-03-29T00:20:20.735Z",
+        "updatedAt": "2025-04-08T17:02:25.675Z"
+    },
+    {
+        "id": "<zone-id>",
+        "name": "<redacted>",
+        "isActive": true,
+        "group": {
+            "id": "<group-id>",
+            "name": "<redacted>",
+            "isActive": true,
+            "createdAt": "2025-04-08T16:21:44.662Z",
+            "updatedAt": "2025-04-08T16:25:01.306Z",
+            "systemChangeoverEnabled": true,
+            "minRuntime": 30,
+            "maxStandby": 60
+        },
+        "adapter": {
+            "id": "<adapter-id>",
+            "deviceSerial": "<adapter-serial>",
+            "isSimulator": false,
+            "roomTemp": 21,
+            "spCool": 23.5,
+            "spHeat": 21.5,
+            "spAuto": null,
+            "humidity": null,
+            "scheduleOwner": "adapter",
+            "power": 1,
+            "operationMode": "autoHeat",
+            "connected": true,
+            "hasSensor": false,
+            "hasMhk2": false,
+            "timeZone": "America/Los_Angeles",
+            "isHeadless": false,
+            "lastStatusChangeAt": "2025-04-08T16:20:16.450Z",
+            "createdAt": "2025-04-08T16:20:15.982Z",
+            "updatedAt": "2025-04-09T18:07:17.220Z"
+        },
+        "createdAt": "2025-04-08T16:20:15.988Z",
+        "updatedAt": "2025-04-08T17:03:27.214Z"
+    }
+]
+```
+
+### sites/{site-id}/kumo-station
+Description TBD. (I get `"error": "kumoStationNotFound"`)
+
+## Group endpoints
 
 **Endpoints**
-- /v3/zones/<zone-id>
+- v3/groups/{group-id}
+
+`{group-id}` is the `id` GUID returned from the `/v3/sites/{site-id}/groups` endpoint.
+
+### groups/{group-id}
+```
+{
+    "id": "<group-id>",
+    "name": "<redacted>",
+    "isActive": true,
+    "createdAt": "2025-04-08T16:21:44.662Z",
+    "updatedAt": "2025-04-08T16:25:01.306Z",
+    "masterZone": {
+        "id": "<zone-id>",
+        "name": "<redacted>"
+    },
+    "systemChangeoverEnabled": true,
+    "minRuntime": 30,
+    "maxStandby": 30,
+    "zones": [
+        {
+            "id": "<zone-id>",
+            "name": "<redacted>",
+            "isActive": true,
+            "createdAt": "2025-03-29T00:20:20.735Z",
+            "updatedAt": "2025-04-08T17:02:25.675Z",
+            "isChangeoverPriority": true,
+            "changeoverPriority": 1
+        },
+        {
+            "id": "<zone-id>",
+            "name": "<redacted>",
+            "isActive": true,
+            "createdAt": "2025-04-08T16:20:15.988Z",
+            "updatedAt": "2025-04-08T17:03:27.214Z",
+            "isChangeoverPriority": true,
+            "changeoverPriority": 2
+        }
+    ]
+}
+```
+
+## Zone Endpoints
+
+**Endpoints**
+- /v3/zones/{zone-id}
 
 `{zone-id}` is the `id` GUID returned by the `/v3/{site-id}/zones` endpoint
-Description TBD.
+
+### zones/{zone-id}
+```
+{
+    "id": "<zone-id>",
+    "name": "<redacted>",
+    "isActive": true,
+    "group": {
+        "id": "<group-id>",
+        "name": "<redacted>",
+        "isActive": true,
+        "createdAt": "2025-04-08T16:21:44.662Z",
+        "updatedAt": "2025-04-09T20:22:09.035Z",
+        "systemChangeoverEnabled": true,
+        "minRuntime": 30,
+        "maxStandby": 60
+    },
+    "adapter": {
+        "id": "<adapter-id>",
+        "deviceSerial": "<device-serial>",
+        "isSimulator": false,
+        "roomTemp": 22,
+        "spCool": 23,
+        "spHeat": 21.5,
+        "spAuto": null,
+        "humidity": 43,
+        "scheduleOwner": "adapter",
+        "power": 1,
+        "operationMode": "autoHeat",
+        "connected": true,
+        "hasSensor": false,
+        "hasMhk2": true,
+        "timeZone": "America/Los_Angeles",
+        "isHeadless": false,
+        "lastStatusChangeAt": "2025-04-05T17:41:41.644Z",
+        "createdAt": "2025-03-29T00:20:20.730Z",
+        "updatedAt": "2025-04-09T20:27:05.796Z"
+    },
+    "createdAt": "2025-03-29T00:20:20.735Z",
+    "updatedAt": "2025-04-08T17:02:25.675Z"
+}
+```
 
 ## Per-device
 
@@ -179,3 +395,153 @@ These endpoints return information per device (indoor unit).
 These endpoints return operational data for each indoor unit similar to that returned by the local API.
 
 Importantly, the `status` endpoint returns the `cryptoSerial` value, required for local communication with the indoor unit.
+
+### devices/{device-serial}
+```
+{
+    "id": "<adapter-id>",
+    "deviceSerial": "<device-serial>",
+    "rssi": -42,
+    "power": 1,
+    "operationMode": "autoHeat",
+    "humidity": 43,
+    "scheduleOwner": "adapter",
+    "fanSpeed": "auto",
+    "airDirection": "vertical",
+    "roomTemp": 22,
+    "unusualFigures": 32768,
+    "twoFiguresCode": "A0",
+    "statusDisplay": 0,
+    "spCool": 23,
+    "spHeat": 21.5,
+    "spAuto": null,
+    "runTest": 0,
+    "activeThermistor": null,
+    "tempSource": null,
+    "isSimulator": false,
+    "serialNumber": "<redacted>",
+    "modelNumber": "SVZ-KP30NA",
+    "ledDisabled": false,
+    "connected": true,
+    "isHeadless": false,
+    "lastStatusChangeAt": "2025-04-05T17:41:41.644Z",
+    "createdAt": "2025-03-29T00:20:20.730Z",
+    "updatedAt": "2025-04-09T20:37:15.239Z",
+    "model": {
+        "id": "67b6aba8-bc5b-4c92-9ea9-14a5320747c8",
+        "brand": "Mitsubishi",
+        "material": "SVZ-KP30NA",
+        "basicMaterial": "SVZ-KP30NA",
+        "replacementMaterial": "SVZ-AP30NL",
+        "materialDescription": "MULTI POSITION INDOOR",
+        "family": "SVZ",
+        "subFamily": "SVZ",
+        "materialGroupName": "PAC indoor",
+        "serialProfile": "ZEA",
+        "materialGroupSeries": "P-Series",
+        "isIndoorUnit": true,
+        "isDuctless": null,
+        "isSwing": null,
+        "isPowerfulMode": null,
+        "modeDescription": "INDOOR UNIT",
+        "isActive": true,
+        "frontendAnimation": "ducted",
+        "gallery": {
+            "id": "fb9153ad-b3ac-4065-bbef-66ceeae809b6",
+            "name": "Air handler",
+            "imageUrl": "https://dw2p0k56b2hr9.cloudfront.net/small_ME_PVA_Air_Handler_Front_copy_9135d8f255.webp",
+            "imageAlt": "Air handler"
+        },
+        "createdAt": "2025-03-12T19:31:06.038Z",
+        "updatedAt": "2025-03-12T19:31:06.038Z"
+    },
+    "displayConfig": {
+        "filter": false,
+        "defrost": false,
+        "hotAdjust": false,
+        "standby": false
+    },
+    "timeZone": "America/Los_Angeles"
+}
+```
+
+### devices/{device-serial}/profile
+```
+[
+    {
+        "hasModeDry": true,
+        "hasModeHeat": true,
+        "hasVaneDir": false,
+        "hasVaneSwing": false,
+        "hasModeVent": true,
+        "hasFanSpeedAuto": true,
+        "hasInitialSettings": true,
+        "hasModeTest": true,
+        "numberOfFanSpeeds": 3,
+        "extendedTemps": true,
+        "usesSetPointInDryMode": true,
+        "hasHotAdjust": true,
+        "hasDefrost": true,
+        "hasStandby": true,
+        "maximumSetPoints": {
+            "cool": 30,
+            "heat": 28,
+            "auto": 28
+        },
+        "minimumSetPoints": {
+            "cool": 19,
+            "heat": 10,
+            "auto": 19
+        }
+    }
+]
+```
+
+### devices/{device-serial}/status
+```
+{
+    "autoModeDisable": true,
+    "firmwareVersion": "02.06.12",
+    "roomTempDisplayOffset": 0,
+    "routerSsid": "<redacted>",
+    "routerRssi": -42,
+    "optimalStart": null,
+    "minSetPoint": 16,
+    "maxSetPoint": 31,
+    "modeHeat": true,
+    "modeDry": false,
+    "receiverRelay": "MHK2",
+    "lastUpdated": "2025-04-09T19:32:36.433Z",
+    "cryptoSerial": "<cryptoSerial>",
+    "cryptoKeySet": "F"
+}
+```
+
+### devices/{device-serial}/initial-settings
+```
+[
+    {
+        "deviceSerial": "<redacted>",
+        "settingNumber": 1,
+        "settingValue": 2
+    },
+    {
+        "deviceSerial": "<redacted>",
+        "settingNumber": 2,
+        "settingValue": 1
+    },
+    ...
+]
+```
+### devices/{device-serial}/kumo-properties
+```
+{
+    "deviceSerial": "<device-serial>",
+    "reporting": {},
+    "heatModeDisable": false,
+    "connected": false,
+    "outdoorAirTemperature": null,
+    "sourceReport": null,
+    "lastUpdated": "2025-04-09T20:24:45.093Z"
+}
+```
