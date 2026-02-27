@@ -10,6 +10,7 @@ from getpass import getpass
 from .py_kumo import PyKumo
 from .py_kumo_station import PyKumoStation
 from .py_kumo_cloud_account_v3 import KumoCloudV3
+from .py_kumo_discovery import probe_candidate_ips
 from .const import KUMO_CONNECT_TIMEOUT_SECONDS, KUMO_RESPONSE_TIMEOUT_SECONDS
 
 _LOGGER = logging.getLogger(__name__)
@@ -180,12 +181,17 @@ class KumoCloudAccount:
 
         return len(self._units.keys()) > 0
 
-    def try_setup_v3_only(self):
+    def try_setup_v3_only(self, candidate_ips=None):
         """Set up using only the V3 API (skip V2 entirely).
 
         Useful when V2 API is broken for an account. Builds a minimal
         V2-compatible kumo_dict from V3 data, preserving any device
         addresses from a previously cached kumo_dict.
+
+        Args:
+            candidate_ips: Optional dict of {mac_address: ip_address} from
+                          DHCP discovery. Used to auto-discover device IPs
+                          via credential probing.
         """
         if not self._username or not self._password:
             _LOGGER.warning("Cannot use V3-only setup without credentials")
@@ -218,6 +224,23 @@ class KumoCloudAccount:
             if serial in cached_addresses:
                 entry["address"] = cached_addresses[serial]
             zone_table[serial] = entry
+
+        # Auto-discover IPs for units missing addresses via credential probing
+        missing = {s: e for s, e in zone_table.items() if not e.get("address")}
+        if missing and candidate_ips:
+            ips_to_probe = list(candidate_ips.values())
+            ip_to_mac = {ip: mac for mac, ip in candidate_ips.items()}
+            _LOGGER.info("Probing %d DHCP IPs for %d unaddressed devices",
+                         len(ips_to_probe), len(missing))
+            matched = probe_candidate_ips(missing, ips_to_probe)
+            for serial, ip in matched.items():
+                zone_table[serial]["address"] = ip
+                # Also populate the MAC from the DHCP mapping
+                mac = ip_to_mac.get(ip, "")
+                if mac:
+                    zone_table[serial]["mac"] = mac
+                _LOGGER.info("Discovered %s -> %s (mac=%s)",
+                             serial, ip, mac)
 
         self._kumo_dict = [
             {},  # account info placeholder
