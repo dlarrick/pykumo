@@ -34,6 +34,13 @@ V3_BASE_HEADERS = {
     "Content-Type": "application/json",
 }
 
+# Engine.IO / Socket.IO protocol message prefixes
+EIO_PING = "2"
+EIO_PONG = "3"
+SIO_CONNECT = "40"
+SIO_EVENT = "42"
+SIO_CONNECT_ERROR = "44"
+
 
 class KumoCloudV3:
     """Client for the Kumo Cloud V3 API used by the Comfort app."""
@@ -113,8 +120,8 @@ class KumoCloudV3:
             return None
         try:
             payload_b64 = self._access_token.split(".")[1]
-            # Add base64 padding
-            payload_b64 += "=" * (4 - len(payload_b64) % 4)
+            # Add base64 padding (0 when already aligned, 1-3 otherwise)
+            payload_b64 += "=" * ((-len(payload_b64)) % 4)
             payload = json.loads(base64.urlsafe_b64decode(payload_b64))
             user_id = payload.get("id")
             return str(user_id) if user_id is not None else None
@@ -187,6 +194,15 @@ class KumoCloudV3:
         """
         passwords = {}
         session = requests.Session()
+        try:
+            return self._socketio_poll(session, serials_needed, timeout_secs,
+                                       passwords, _retried)
+        finally:
+            session.close()
+
+    def _socketio_poll(self, session, serials_needed: set, timeout_secs: int,
+                       passwords: dict, _retried: bool) -> dict:
+        """Inner Socket.IO poll loop (session is managed by caller)."""
         base_params = {"EIO": "4", "transport": "polling"}
         headers = {"Authorization": f"Bearer {self._access_token}", "Accept": "*/*"}
 
@@ -223,11 +239,11 @@ class KumoCloudV3:
                                headers=headers, timeout=timeout)
 
         # 2. Namespace connect
-        _post("40")
+        _post(SIO_CONNECT)
         resp = _poll()
 
         # Check for rejection (token expired)
-        if resp.ok and resp.text.startswith("44") and not _retried:
+        if resp.ok and resp.text.startswith(SIO_CONNECT_ERROR) and not _retried:
             _LOGGER.info("Socket.IO namespace rejected, refreshing token...")
             if self.refresh():
                 return self._socketio_session(serials_needed, timeout_secs, _retried=True)
@@ -237,7 +253,7 @@ class KumoCloudV3:
         # 3. Account-level subscribe (required for adapter_update events)
         user_id = self._get_user_id_from_token()
         if user_id:
-            _post(f'42["subscribe","","{user_id}"]')
+            _post(f'{SIO_EVENT}["subscribe","","{user_id}"]')
             resp = _poll()
             if resp.ok:
                 self._extract_passwords(resp.text, passwords, serials_needed)
@@ -245,19 +261,20 @@ class KumoCloudV3:
             _LOGGER.warning("Could not extract user ID — adapter_update events may not arrive")
 
         # 4. Subscribe to each device
-        _post("\x1e".join(f'42["subscribe","{s}"]' for s in serials_needed))
+        _post("\x1e".join(f'{SIO_EVENT}["subscribe","{s}"]' for s in serials_needed))
         resp = _poll()
         if resp.ok:
             self._extract_passwords(resp.text, passwords, serials_needed)
 
         # 5. Force adapter_update events (contains passwords)
         _post("\x1e".join(
-            f'42["force_adapter_request","{s}","adapterStatus"]' for s in serials_needed
+            f'{SIO_EVENT}["force_adapter_request","{s}","adapterStatus"]'
+            for s in serials_needed
         ))
 
         # 6. Send device_status_v2 to trigger updates
-        status_msgs = ['42["device_status_v2",""]']
-        status_msgs.extend(f'42["device_status_v2","{s}"]' for s in serials_needed)
+        status_msgs = [f'{SIO_EVENT}["device_status_v2",""]']
+        status_msgs.extend(f'{SIO_EVENT}["device_status_v2","{s}"]' for s in serials_needed)
         _post("\x1e".join(status_msgs))
 
         # 7. Poll for adapter_update events
@@ -285,9 +302,9 @@ class KumoCloudV3:
             self._extract_passwords(resp.text, passwords, serials_needed)
 
             # Respond to ping with pong
-            if "2" in self._split_messages(resp.text):
+            if EIO_PING in self._split_messages(resp.text):
                 try:
-                    _post("3")
+                    _post(EIO_PONG)
                 except Exception:
                     pass
 
@@ -309,11 +326,11 @@ class KumoCloudV3:
             if ":" in msg and msg.split(":")[0].isdigit():
                 msg = msg.split(":", 1)[1]
 
-            if not msg.startswith("42"):
+            if not msg.startswith(SIO_EVENT):
                 continue
 
             try:
-                payload = json.loads(msg[2:])
+                payload = json.loads(msg[len(SIO_EVENT):])
             except (json.JSONDecodeError, IndexError):
                 continue
 

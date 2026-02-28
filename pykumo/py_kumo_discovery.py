@@ -54,9 +54,14 @@ def probe_candidate_ips(devices: Dict[str, dict],
             _LOGGER.debug("Skipping %s: missing credentials", serial)
             continue
         try:
+            crypto = bytearray.fromhex(crypto_hex)
+            if len(crypto) < 9:
+                _LOGGER.debug("Skipping %s: cryptoSerial too short (%d bytes)",
+                              serial, len(crypto))
+                continue
             device_creds[serial] = {
                 "password": base64.b64decode(pw_b64),
-                "crypto_serial": bytearray.fromhex(crypto_hex),
+                "crypto_serial": crypto,
             }
         except Exception as ex:
             _LOGGER.debug("Skipping %s: bad credentials: %s", serial, ex)
