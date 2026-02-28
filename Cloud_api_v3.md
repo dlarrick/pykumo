@@ -290,11 +290,11 @@ Description TBD. (I get `"error": "kumoStationNotFound"`)
 ## Group endpoints
 
 **Endpoints**
-- v3/groups/{group-id}
+- /v3/groups/{group-id}
 
 `{group-id}` is the `id` GUID returned from the `/v3/sites/{site-id}/groups` endpoint.
 
-### groups/{group-id}
+### /v3/groups/{group-id}
 ```
 {
     "id": "<group-id>",
