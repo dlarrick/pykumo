@@ -332,7 +332,7 @@ Description TBD. (I get `"error": "kumoStationNotFound"`)
 }
 ```
 
-## Zone Endpoints
+## Zone endpoints
 
 **Endpoints**
 - /v3/zones/{zone-id}
