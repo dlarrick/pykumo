@@ -337,7 +337,7 @@ Description TBD. (I get `"error": "kumoStationNotFound"`)
 **Endpoints**
 - /v3/zones/{zone-id}
 
-`{zone-id}` is the `id` GUID returned by the `/v3/{site-id}/zones` endpoint
+`{zone-id}` is the `id` GUID returned by the `/v3/sites/{site-id}/zones` endpoint
 
 ### zones/{zone-id}
 ```
