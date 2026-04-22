@@ -5,14 +5,76 @@ import hashlib
 import base64
 import time
 import logging
+import threading
 import requests
-from urllib3.util.retry import Retry
 from requests.adapters import HTTPAdapter
 from requests.exceptions import Timeout
 from .const import (CACHE_INTERVAL_SECONDS, W_PARAM, S_PARAM, UNIT_CONNECT_TIMEOUT_SECONDS,
                     UNIT_RESPONSE_TIMEOUT_SECONDS)
 
 _LOGGER = logging.getLogger(__name__)
+
+# One persistent requests.Session per thread, keyed by unit address.
+# requests.Session reuses the underlying TCP connection (HTTP/1.1 keep-alive)
+# across calls, eliminating the socket exhaustion on the Kumo WiFi adapter
+# caused by opening a new connection on every poll (hass-kumo issue #82).
+#
+# threading.local is used instead of storing the session on self because
+# hass-kumo dispatches pykumo calls via HA's shared ThreadPoolExecutor
+# (async_add_executor_job), meaning the same PyKumo instance can land on
+# different threads across successive calls. requests.Session is not
+# thread-safe, so a per-thread store is required.
+_tl = threading.local()
+
+
+def _get_session(address: str, timeouts: tuple) -> requests.Session:
+    """Return a persistent Session for (current_thread, address).
+
+    Creates a new Session on first access per thread. The Session is
+    configured with a single retry (backoff 0.1s) and keep-alive enabled
+    via the default HTTPAdapter (pool_connections=1, pool_maxsize=1 is
+    sufficient for a single-endpoint device).
+    """
+    if not hasattr(_tl, "sessions"):
+        _tl.sessions = {}
+
+    session = _tl.sessions.get(address)
+    if session is None:
+        _LOGGER.debug(
+            "Creating new persistent Session for %s on thread %s",
+            address, threading.current_thread().name
+        )
+        session = requests.Session()
+        # Single retry with a short backoff — the adapter is local LAN,
+        # so we don't want aggressive retries masking real failures.
+        adapter = HTTPAdapter(
+            max_retries=1,
+            pool_connections=1,
+            pool_maxsize=1,
+        )
+        session.mount("http://", adapter)
+        _tl.sessions[address] = session
+
+    return session
+
+
+def _drop_session(address: str) -> None:
+    """Close and discard the thread-local session for address.
+
+    Called on transport-level errors so the next attempt gets a fresh
+    connection rather than reusing a broken one.
+    """
+    sessions = getattr(_tl, "sessions", {})
+    session = sessions.pop(address, None)
+    if session is not None:
+        try:
+            session.close()
+        except Exception:
+            pass
+        _LOGGER.debug(
+            "Dropped Session for %s on thread %s",
+            address, threading.current_thread().name
+        )
 
 
 class PyKumoBase:
@@ -64,6 +126,11 @@ class PyKumoBase:
 
     def _request(self, post_data):
         """ Send request to configured unit and return response dict
+
+        Uses a thread-local persistent requests.Session instead of
+        opening a new Session (and thus a new TCP connection) on every
+        call. On transport error the session is discarded and one retry
+        is attempted with a fresh connection.
         """
         if not self._address:
             _LOGGER.warning("Unit %s address not set", self._name)
@@ -73,19 +140,37 @@ class PyKumoBase:
         headers = {'Accept': 'application/json, text/plain, */*',
                    'Content-Type': 'application/json'}
         token_param = {'m': token}
-        try:
-            with requests.Session() as session:
-                retries = Retry(total=3, backoff_factor=0.1)
-                session.mount('http://', HTTPAdapter(max_retries=retries))
-                _LOGGER.debug("Issue request %s %s", url, post_data)
+
+        for attempt in range(2):
+            session = _get_session(self._address, self._timeouts)
+            try:
+                _LOGGER.debug("Issue request %s %s (attempt %d)", url, post_data, attempt)
                 response = session.put(
-                    url, headers=headers, data=post_data, params=token_param,
-                    timeout=self._timeouts)
-                return response.json()
-        except Timeout as ex:
-            _LOGGER.warning("Timeout issuing request %s: %s", url, str(ex))
-        except Exception as ex:
-            _LOGGER.warning("Error issuing request %s: %s", url, str(ex))
+                    url,
+                    headers=headers,
+                    data=post_data,
+                    params=token_param,
+                    timeout=self._timeouts,
+                )
+                result = response.json()
+                response.close()  # explicitly return socket to pool / graceful FIN
+                return result
+
+            except Timeout as ex:
+                _LOGGER.warning("Timeout issuing request %s: %s", url, str(ex))
+                _drop_session(self._address)
+                return {}
+
+            except Exception as ex:
+                _LOGGER.debug(
+                    "Request error on attempt %d for %s: %s (%s)",
+                    attempt, url, str(ex), type(ex).__name__
+                )
+                _drop_session(self._address)
+                if attempt == 1:
+                    _LOGGER.warning("Error issuing request %s: %s", url, str(ex))
+                    return {}
+
         return {}
 
     def get_status(self):
