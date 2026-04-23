@@ -132,115 +132,122 @@ class PyKumo(PyKumoBase):
         """ Retrieve and cache current status dictionary if enough time
             has passed
         """
-        now = time.monotonic()
-        if (now - self._last_status_update > CACHE_INTERVAL_SECONDS or
-                'mode' not in self._status):
-            query = ['indoorUnit', 'status']
-            needed = ['mode', 'standby', 'spHeat', 'spCool', 'roomTemp',
-                      'fanSpeed', 'vaneDir', 'filterDirty', 'defrost']
-            # Following not currently used:
-            # 'tempSource', 'activeThermistor', 'hotAdjust', 'runTest'
-            response = self._retrieve_attributes(query, needed)
-            raw_status = response
-            try:
-                self._status = raw_status['r']['indoorUnit']['status']
-                self._last_status_update = now
-            except KeyError as ke:
-                _LOGGER.warning(f"{self._name}: Error retrieving status from {response}: "
-                                f"{str(ke)}")
-                return False
-
-            self._sensors = []
-            for s in range(POSSIBLE_SENSORS):
-                s_str = f'{s}'
-                query = ['sensors', s_str]
-                needed = ['uuid', 'humidity', 'temperature', 'battery', 'rssi', 'txPower']
-
+        
+        # Use cycle-aware session management to optimize multiple requests during status update, 
+        # then close session at the end of the cycle to send a clean FIN to the adapter.
+        self.begin_cycle()
+        try:
+            now = time.monotonic()
+            if (now - self._last_status_update > CACHE_INTERVAL_SECONDS or
+                    'mode' not in self._status):
+                query = ['indoorUnit', 'status']
+                needed = ['mode', 'standby', 'spHeat', 'spCool', 'roomTemp',
+                          'fanSpeed', 'vaneDir', 'filterDirty', 'defrost']
+                # Following not currently used:
+                # 'tempSource', 'activeThermistor', 'hotAdjust', 'runTest'
                 response = self._retrieve_attributes(query, needed)
-
+                raw_status = response
                 try:
-                    sensor = response['r']['sensors'][s_str]
-                    if isinstance(sensor, dict) and sensor.get('uuid'):
-                        self._sensors.append(sensor)
-                    else:
-                        # No sensor found at this index; skip the rest
-                        break
+                    self._status = raw_status['r']['indoorUnit']['status']
+                    self._last_status_update = now
                 except KeyError as ke:
-                    _LOGGER.warning(f"{self._name}: Error retrieving sensors from {response}: "
+                    _LOGGER.warning(f"{self._name}: Error retrieving status from {response}: "
                                     f"{str(ke)}")
                     return False
 
-            query = ['indoorUnit', 'profile']
-            needed = ['numberOfFanSpeeds', 'hasFanSpeedAuto', 'hasVaneSwing', 'hasModeDry',
-                      'hasModeHeat', 'hasModeVent', 'hasModeAuto', 'hasVaneDir']
-            # Following not currently used
-            # 'extendedTemps', 'usesSetPointInDryMode', 'hasHotAdjust', 'hasDefrost',
-            # 'hasStandby', 'maximumSetPoints', 'minimumSetPoints'
-            response = self._retrieve_attributes(query, needed)
-            try:
-                self._profile = response['r']['indoorUnit']['profile']
-            except KeyError as ke:
-                _LOGGER.warning(f"{self._name}: Error retrieving profile from {response}: "
-                                f"{str(ke)}")
-                return False
+                self._sensors = []
+                for s in range(POSSIBLE_SENSORS):
+                    s_str = f'{s}'
+                    query = ['sensors', s_str]
+                    needed = ['uuid', 'humidity', 'temperature', 'battery', 'rssi', 'txPower']
 
-            # Edit profile with settings from adapter
-            query = ['adapter', 'status']
-            needed = ['autoModePrevention', 'userHasModeDry', 'userHasModeHeat',
-                      'localNetwork', 'runState']
-            # Following not currently used:
-            # 'name', 'roomTempOffset', 'userMinCoolSetPoint', 'userMaxHeatSetPoint',
-            # 'ledDisabled', 'serverHostname'
-            # ['adapter', 'info'] not used:
-            # ['macAddress', 'serialNumber', 'isTestMode', 'firmwareVersion']
-            response = self._retrieve_attributes(query, needed)
-            try:
-                status = response['r']['adapter']['status']
-                self._profile['hasModeAuto'] = not status.get(
-                    'autoModePrevention', False)
-                if not status.get('userHasModeDry', False):
-                    self._profile['hasModeDry'] = False
-                if not status.get('userHasModeHeat', False):
-                    self._profile['hasModeHeat'] = False
+                    response = self._retrieve_attributes(query, needed)
+
+                    try:
+                        sensor = response['r']['sensors'][s_str]
+                        if isinstance(sensor, dict) and sensor.get('uuid'):
+                            self._sensors.append(sensor)
+                        else:
+                            # No sensor found at this index; skip the rest
+                            break
+                    except KeyError as ke:
+                        _LOGGER.warning(f"{self._name}: Error retrieving sensors from {response}: "
+                                        f"{str(ke)}")
+                        return False
+
+                query = ['indoorUnit', 'profile']
+                needed = ['numberOfFanSpeeds', 'hasFanSpeedAuto', 'hasVaneSwing', 'hasModeDry',
+                          'hasModeHeat', 'hasModeVent', 'hasModeAuto', 'hasVaneDir']
+                # Following not currently used
+                # 'extendedTemps', 'usesSetPointInDryMode', 'hasHotAdjust', 'hasDefrost',
+                # 'hasStandby', 'maximumSetPoints', 'minimumSetPoints'
+                response = self._retrieve_attributes(query, needed)
                 try:
-                    self._profile['wifiRSSI'] = (
-                        status['localNetwork']['stationMode']['RSSI'])
-                except KeyError:
-                    self._profile['wifiRSSI'] = None
-                self._profile['runState'] = status.get('runState', "unknown")
-            except KeyError as ke:
-                _LOGGER.warning(f"{self._name}: Error retrieving adapter profile from {response}: "
-                                f"{str(ke)}")
-                return False
+                    self._profile = response['r']['indoorUnit']['profile']
+                except KeyError as ke:
+                    _LOGGER.warning(f"{self._name}: Error retrieving profile from {response}: "
+                                    f"{str(ke)}")
+                    return False
 
-            # Edit profile with data from MHK2 if present
-            query = '{"c":{"mhk2":{"status":{}}}}'.encode('utf-8')
-            response = self._request(query)
-            try:
-                self._mhk2 = response['r']['mhk2']
-                if isinstance(self._mhk2, dict):
-                    mhk2_humidity = self._mhk2['status']['indoorHumid']
+                # Edit profile with settings from adapter
+                query = ['adapter', 'status']
+                needed = ['autoModePrevention', 'userHasModeDry', 'userHasModeHeat',
+                          'localNetwork', 'runState']
+                # Following not currently used:
+                # 'name', 'roomTempOffset', 'userMinCoolSetPoint', 'userMaxHeatSetPoint',
+                # 'ledDisabled', 'serverHostname'
+                # ['adapter', 'info'] not used:
+                # ['macAddress', 'serialNumber', 'isTestMode', 'firmwareVersion']
+                response = self._retrieve_attributes(query, needed)
+                try:
+                    status = response['r']['adapter']['status']
+                    self._profile['hasModeAuto'] = not status.get(
+                        'autoModePrevention', False)
+                    if not status.get('userHasModeDry', False):
+                        self._profile['hasModeDry'] = False
+                    if not status.get('userHasModeHeat', False):
+                        self._profile['hasModeHeat'] = False
+                    try:
+                        self._profile['wifiRSSI'] = (
+                            status['localNetwork']['stationMode']['RSSI'])
+                    except KeyError:
+                        self._profile['wifiRSSI'] = None
+                    self._profile['runState'] = status.get('runState', "unknown")
+                except KeyError as ke:
+                    _LOGGER.warning(f"{self._name}: Error retrieving adapter profile from {response}: "
+                                    f"{str(ke)}")
+                    return False
 
-                    if mhk2_humidity is not None:
-                        # Add a sensor entry for the MHK2 unit.
-                        mhk2_sensor_value = {
-                            'battery': None,
-                            'humidity': mhk2_humidity,
-                            'rssi': None,
-                            'temperature': None,
-                            'txPower': None,
-                            'uuid': None
-                        }
-                        self._sensors.append(mhk2_sensor_value)
-            except (KeyError, TypeError) as e:
-                # We don't bailout here since the MHK2 component is optional.
-                _LOGGER.info(f"{self._name}: Error retrieving MHK2 status from {response}: {e}")
-                pass
+                # Edit profile with data from MHK2 if present
+                query = '{"c":{"mhk2":{"status":{}}}}'.encode('utf-8')
+                response = self._request(query)
+                try:
+                    self._mhk2 = response['r']['mhk2']
+                    if isinstance(self._mhk2, dict):
+                        mhk2_humidity = self._mhk2['status']['indoorHumid']
 
-        if self._unit_schedule is not None:
-            self._unit_schedule.fetch()
+                        if mhk2_humidity is not None:
+                            # Add a sensor entry for the MHK2 unit.
+                            mhk2_sensor_value = {
+                                'battery': None,
+                                'humidity': mhk2_humidity,
+                                'rssi': None,
+                                'temperature': None,
+                                'txPower': None,
+                                'uuid': None
+                            }
+                            self._sensors.append(mhk2_sensor_value)
+                except (KeyError, TypeError) as e:
+                    # We don't bailout here since the MHK2 component is optional.
+                    _LOGGER.info(f"{self._name}: Error retrieving MHK2 status from {response}: {e}")
+                    pass
 
-        return True
+            if self._unit_schedule is not None:
+                self._unit_schedule.fetch()
+
+            return True
+        finally:
+            self.end_cycle()
 
     def get_mode(self):
         """ Last retrieved operating mode from unit """
