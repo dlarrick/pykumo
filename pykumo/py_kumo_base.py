@@ -101,13 +101,6 @@ class PyKumoBase:
         self._sensors = []
         self._last_status_update = time.monotonic() - 2 * CACHE_INTERVAL_SECONDS
 
-        # Cycle context: when True, _request keeps the session open across
-        # calls for keep-alive reuse. When False, each _request closes the
-        # session immediately after the response. Multi-request operations
-        # like update_status wrap themselves in a cycle via begin_cycle()
-        # / end_cycle(). Single-shot operations (set_mode, etc.) leave
-        # this False and get immediate FIN after each call.
-        self._in_cycle = False
 
     def _token(self, post_data):
         """ Compute URL including security token for a given command
@@ -145,15 +138,21 @@ class PyKumoBase:
         """Mark the start of a multi-request cycle. Subsequent _request
         calls will reuse the same TCP connection (keep-alive) until
         end_cycle() is called. Safe to call multiple times; idempotent.
+
+        Cycle state is stored thread-locally so concurrent threads calling
+        into the same PyKumoBase instance each manage their own lifecycle
+        independently.
         """
-        self._in_cycle = True
+        if not hasattr(_tl, "cycles"):
+            _tl.cycles = set()
+        _tl.cycles.add(self._address)
 
     def end_cycle(self):
         """Mark the end of a multi-request cycle and close the session.
         Sends a FIN to the adapter, freeing its socket-table entry.
         Safe to call multiple times; idempotent.
         """
-        self._in_cycle = False
+        getattr(_tl, "cycles", set()).discard(self._address)
         _drop_session(self._address)
 
     def close(self):
@@ -214,18 +213,23 @@ class PyKumoBase:
 
                 # Close the session if this is a single-shot call
                 # (outside any multi-request cycle).
-                if not self._in_cycle:
+                if self._address not in getattr(_tl, "cycles", set()):
                     _drop_session(self._address)
 
                 return result
 
             except Timeout as ex:
-                _LOGGER.warning("Timeout issuing request %s: %s", url, str(ex))
+                _LOGGER.debug(
+                    "Timeout on attempt %d for %s: %s", attempt, url, str(ex)
+                )
                 self._cleanup_response(response)
                 # A timeout means the connection state is unknowable —
                 # drop it rather than risk reusing a half-dead socket.
                 _drop_session(self._address)
-                return {}
+                if attempt == 1:
+                    _LOGGER.warning("Timeout issuing request %s: %s", url, str(ex))
+                    return {}
+                # attempt == 0: fall through to retry with a fresh session
 
             except (json.JSONDecodeError, ValueError) as ex:
                 _LOGGER.warning(
