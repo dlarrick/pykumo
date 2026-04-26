@@ -208,15 +208,16 @@ class KumoCloudAccount:
         except Exception as ex:
             failed_str = str(ex)
 
-        if not v3_devices:
+        if not failed_str and not v3_devices:
             failed_str = "no devices from v3 API"
         if failed_str:
             _LOGGER.warning("V3-only setup failed: %s, using %d cached units", failed_str, len(cached_units))
             if cached_units:
-                # We have good cached units, so just use those and keep the kump_dict intact
+                # We have good cached units, so just use those and keep the kumo_dict intact
                 self._units = {}
                 for serial, unit_data in cached_units.items():
                     self._units[serial] = self._parse_unit(unit_data)
+                self._need_fetch = False
             return bool(cached_units)
 
         # Build V2-compatible kumo_dict from V3 data
