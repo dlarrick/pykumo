@@ -232,7 +232,7 @@ class KumoCloudAccount:
 
         # Auto-discover IPs for units missing addresses via credential probing
         missing = {s: e for s, e in zone_table.items() if not e.get("address")}
-        _LOGGER.info("Looking for addresses for %d missing units, have %d candidate IPs", len(missing), len(candidate_ips))
+        _LOGGER.info("Looking for addresses for %d missing units, have %d candidate IPs", len(missing), len(candidate_ips or {}))
         if missing and candidate_ips:
             ips_to_probe = list(candidate_ips.values())
             ip_to_mac = {ip: mac for mac, ip in candidate_ips.items()}
