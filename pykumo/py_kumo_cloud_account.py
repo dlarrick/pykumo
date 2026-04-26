@@ -201,6 +201,7 @@ class KumoCloudAccount:
         cached_units = self._extract_cached_units()
 
         failed_str = ""
+        v3_devices = {}
         try:
             v3 = KumoCloudV3(self._username, self._password)
             v3_devices = v3.get_all_device_credentials()
@@ -212,7 +213,10 @@ class KumoCloudAccount:
         if failed_str:
             _LOGGER.warning("V3-only setup failed: %s, using %d cached units", failed_str, len(cached_units))
             if cached_units:
-                self._kumo_dict[2]['children'] = cached_units
+                # We have good cached units, so just use those and keep the kump_dict intact
+                self._units = {}
+                for serial, unit_data in cached_units.items():
+                    self._units[serial] = self._parse_unit(unit_data)
             return bool(cached_units)
 
         # Build V2-compatible kumo_dict from V3 data
@@ -249,7 +253,6 @@ class KumoCloudAccount:
                              serial, ip, mac)
 
         # Remove units that were not found
-        missing = {s: e for s, e in zone_table.items() if not e.get("address")}
         zone_table = {s:e for s, e in zone_table.items() if e.get("address")}
         self._kumo_dict = [
             {},  # account info placeholder
