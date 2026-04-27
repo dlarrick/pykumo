@@ -128,6 +128,21 @@ class PyKumo(PyKumoBase):
                 "Exception fetching %s: %s", base_query, str(e))
         return response
 
+    def _compute_has_mode_auto(self, auto_mode_prevention: bool) -> bool:
+        """ True if the unit supports auto (heat/cool) mode.
+
+        Honors the adapter's autoModePrevention flag, but falls back to the
+        unit profile's auto setpoints, since some installer configurations
+        set autoModePrevention=True even though the unit (and the Mitsubishi
+        Comfort app) treat auto mode as supported. Checks both
+        maximumSetPoints and minimumSetPoints for an 'auto' key.
+        """
+        if not auto_mode_prevention:
+            return True
+        max_sp = self._profile.get('maximumSetPoints', {}) or {}
+        min_sp = self._profile.get('minimumSetPoints', {}) or {}
+        return 'auto' in max_sp or 'auto' in min_sp
+
     def update_status(self):
         """ Retrieve and cache current status dictionary if enough time
             has passed
@@ -177,10 +192,11 @@ class PyKumo(PyKumoBase):
 
                 query = ['indoorUnit', 'profile']
                 needed = ['numberOfFanSpeeds', 'hasFanSpeedAuto', 'hasVaneSwing', 'hasModeDry',
-                          'hasModeHeat', 'hasModeVent', 'hasModeAuto', 'hasVaneDir']
+                          'hasModeHeat', 'hasModeVent', 'hasModeAuto', 'hasVaneDir',
+                          'maximumSetPoints', 'minimumSetPoints']
                 # Following not currently used
                 # 'extendedTemps', 'usesSetPointInDryMode', 'hasHotAdjust', 'hasDefrost',
-                # 'hasStandby', 'maximumSetPoints', 'minimumSetPoints'
+                # 'hasStandby'
                 response = self._retrieve_attributes(query, needed)
                 try:
                     self._profile = response['r']['indoorUnit']['profile']
@@ -201,8 +217,8 @@ class PyKumo(PyKumoBase):
                 response = self._retrieve_attributes(query, needed)
                 try:
                     status = response['r']['adapter']['status']
-                    self._profile['hasModeAuto'] = not status.get(
-                        'autoModePrevention', False)
+                    self._profile['hasModeAuto'] = self._compute_has_mode_auto(
+                        status.get('autoModePrevention', False))
                     if not status.get('userHasModeDry', False):
                         self._profile['hasModeDry'] = False
                     if not status.get('userHasModeHeat', False):
