@@ -1,23 +1,23 @@
-name: Python Tests
+name: Pull request check
 
 on:
-  push:
-    branches: [ main ]
   pull_request:
-    branches: [ main ]
+    branches: [ master ]
 
 jobs:
   test:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13"]
+        python-version: ["3.13", "3.14"]
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
+      with:
+        fetch-depth: 0
 
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
         python-version: ${{ matrix.python-version }}
 
@@ -26,6 +26,11 @@ jobs:
         python -m pip install --upgrade pip
         pip install .
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+    - name: Run pre-commit
+      run: |
+        pip install pre-commit
+        pre-commit run --from-ref origin/master --to-ref HEAD
 
     - name: Run tests
       run: |

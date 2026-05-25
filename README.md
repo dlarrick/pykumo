@@ -3,6 +3,7 @@ Python library to interact with Mitsubishi Kumo Cloud devices via their local AP
 
 The hard work of generating the security token was done by https://github.com/sushilks/kumojs, and that part of pykumo is based heavily on sushilks's code, translated to Python by me. pykumo has no dependency on kumojs.
 
+
 ## Kumo System Components
 
 ### Outdoor Unit
@@ -95,3 +96,9 @@ query = '{"c":{"indoorUnit":{"status":{}}}}'.encode('utf-8')
 unit._request(query)
 ```
 This prints the primary record, the `status` object. Most of the valid queries and commands were discovered by snooping the traffic between the Kumo Cloud app and the indoor unit. A few were determined by experimentation. It's possible that additional values and controls are available beyond those already discovered, especially on indoor units newer than those owned by this author. I welcome details on these via pull requests or issues on this repo.
+
+## Development
+
+Pull requests are welcome for new features or bug fixes. The primary maintainer's day job may make response times somewhat slow.
+
+Pre-commit is configured on this repo. To make development easier, run `pre-commit install`. Pre-commit and unit tests will run on pull requests. For PRs from forked repos, this will happen after maintainer approval.
