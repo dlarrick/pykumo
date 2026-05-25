@@ -7,14 +7,14 @@ from .py_kumo import PyKumo
 from .py_kumo_base import PyKumoBase
 from .py_kumo_station import PyKumoStation
 
-__version__ = "0.4.2"
+__version__ = "0.5.0"
 name = "pykumo"
 
 __all__ = [
-    KumoCloudAccount,
-    KumoCloudV3,
-    probe_candidate_ips,
-    PyKumo,
-    PyKumoBase,
-    PyKumoStation,
+    "KumoCloudAccount",
+    "KumoCloudV3",
+    "probe_candidate_ips",
+    "PyKumo",
+    "PyKumoBase",
+    "PyKumoStation",
 ]

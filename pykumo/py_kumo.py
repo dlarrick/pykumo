@@ -115,10 +115,10 @@ class PyKumo(PyKumoBase):
                     tries = 0
                     while tries < retries:
                         sub_response = self._request(attr_query)
-                        if self._rebootable_response(response):
+                        if self._rebootable_response(sub_response):
                             should_reboot = True
                             break
-                        if self._retryable_response(response):
+                        if self._retryable_response(sub_response):
                             _LOGGER.info(
                                 f"Retry {tries} sub query due to {sub_response}"
                             )
