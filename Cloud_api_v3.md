@@ -5,7 +5,7 @@
 > As of pykumo 0.5.0, the library has been fully migrated to the V3 API for all credential retrieval, and the legacy V2 API is no longer used. This document remains as a historical reference for the reverse-engineering process.
 
 **Note**: This API summary is reverse-engineered and is a work in progress.
- This is not official documentation from Mitubishi, nor has their permission been sought to publish these findings.
+ This is not official documentation from Mitsubishi, nor has their permission been sought to publish these findings.
 
 ## Summary
 The Mitsubishi Kumo Cloud API as used by its mobile apps has changed from a functional but quirky and dated version (with no published version number, as far as I can tell) to a v3 API that uses a more modern approach, with such features as refreshable [JWT](https://en.wikipedia.org/wiki/JSON_Web_Token) authentication and servers capable of using [HTTP/2](https://en.wikipedia.org/wiki/HTTP/2) connections.

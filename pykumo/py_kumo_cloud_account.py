@@ -2,6 +2,7 @@
 
 import logging
 import re
+import base64
 from getpass import getpass
 from .py_kumo import PyKumo
 from .py_kumo_station import PyKumoStation
@@ -29,6 +30,17 @@ class KumoCloudAccount:
         self._units = {}
         self._kumo_dict = kumo_dict
         self._need_fetch = kumo_dict is None
+        if kumo_dict:
+            self._load_from_cache()
+
+    def _load_from_cache(self):
+        """Populate _units from existing _kumo_dict."""
+        cached_units = self._extract_cached_units()
+        self._units = {}
+        for serial, unit_data in cached_units.items():
+            if unit_data.get("password") and unit_data.get("cryptoSerial"):
+                self._units[serial] = self._parse_unit(unit_data)
+        _LOGGER.info("Initialized with %d units from cache", len(self._units))
 
     @staticmethod
     def Factory(username=None, password=None, kumo_dict=None):
@@ -126,18 +138,24 @@ class KumoCloudAccount:
             # Check reachability if we have an address
             reachable = False
             if unit["address"]:
-                creds = {
-                    "password": unit["password"],
-                    "cryptoSerial": unit["cryptoSerial"],
-                }
-                if probe_ip(unit["address"], creds, timeout=2.0):
-                    reachable = True
-                else:
-                    _LOGGER.info(
-                        "Unit %s unreachable at %s; will attempt discovery",
-                        serial,
-                        unit["address"],
-                    )
+                try:
+                    # The local API expects:
+                    # password: bytes (base64 decoded)
+                    # crypto_serial: bytearray (hex decoded)
+                    creds = {
+                        "password": base64.b64decode(unit["password"]),
+                        "crypto_serial": bytearray.fromhex(unit["cryptoSerial"]),
+                    }
+                    if probe_ip(unit["address"], creds, timeout=2.0):
+                        reachable = True
+                    else:
+                        _LOGGER.info(
+                            "Unit %s unreachable at %s; will attempt discovery",
+                            serial,
+                            unit["address"],
+                        )
+                except Exception as ex:
+                    _LOGGER.info("Skipping reachability check for %s: %s", serial, ex)
 
             unit["reachable"] = reachable
             final_units[serial] = unit

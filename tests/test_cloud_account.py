@@ -41,8 +41,8 @@ class TestKumoCloudAccount(unittest.TestCase):
             "SERIAL1": {
                 "serial": "SERIAL1",
                 "label": "Unit 1",
-                "password": "pw1",
-                "cryptoSerial": "cs1",
+                "password": "cHcx",
+                "cryptoSerial": "0123456789ABCDEF01",
                 "mac": "mac1",
                 "unitType": "ductless",
             }
@@ -57,7 +57,12 @@ class TestKumoCloudAccount(unittest.TestCase):
         self.assertIn("SERIAL1", account._units)
         self.assertEqual(account.get_address("SERIAL1"), "192.168.1.10")
         mock_probe_ip.assert_called_with(
-            "192.168.1.10", {"password": "pw1", "cryptoSerial": "cs1"}, timeout=2.0
+            "192.168.1.10",
+            {
+                "password": b"pw1",
+                "crypto_serial": bytearray.fromhex("0123456789ABCDEF01"),
+            },
+            timeout=2.0,
         )
 
     @patch("pykumo.py_kumo_cloud_account.KumoCloudV3")
@@ -107,8 +112,8 @@ class TestKumoCloudAccount(unittest.TestCase):
             "SERIAL1": {
                 "serial": "SERIAL1",
                 "label": "U1",
-                "password": "pw1",
-                "cryptoSerial": "cs1",
+                "password": "cHcx",
+                "cryptoSerial": "0123456789ABCDEF01",
                 "mac": "mac1",
                 "unitType": "ductless",
             },
@@ -149,8 +154,8 @@ class TestKumoCloudAccount(unittest.TestCase):
             "SERIAL1": {
                 "serial": "SERIAL1",
                 "label": "U1",
-                "password": "pw1",
-                "cryptoSerial": "cs1",
+                "password": "cHcx",
+                "cryptoSerial": "0123456789ABCDEF01",
                 "mac": "mac1",
                 "unitType": "ductless",
             }
@@ -181,8 +186,8 @@ class TestKumoCloudAccount(unittest.TestCase):
             "SERIAL1": {
                 "serial": "SERIAL1",
                 "label": "U1",
-                "password": "pw1",
-                "cryptoSerial": "cs1",
+                "password": "cHcx",
+                "cryptoSerial": "0123456789ABCDEF01",
                 "mac": "mac1",
                 "unitType": "ductless",
             },
@@ -224,8 +229,8 @@ class TestKumoCloudAccount(unittest.TestCase):
             "SERIAL1": {
                 "serial": "SERIAL1",
                 "label": "U1",
-                "password": "pw1",
-                "cryptoSerial": "cs1",
+                "password": "cHcx",
+                "cryptoSerial": "0123456789ABCDEF01",
                 "mac": "mac1",
                 "unitType": "ductless",
             },
@@ -262,8 +267,8 @@ class TestKumoCloudAccount(unittest.TestCase):
             "SERIAL1": {
                 "serial": "SERIAL1",
                 "label": "U1",
-                "password": "pw1",
-                "cryptoSerial": "cs1",
+                "password": "cHcx",
+                "cryptoSerial": "0123456789ABCDEF01",
                 "mac": "mac1",
                 "unitType": "ductless",
             },
@@ -341,6 +346,13 @@ class TestKumoCloudAccount(unittest.TestCase):
         self.assertEqual(account._kumo_dict, self.cached_dict)
         self.assertFalse(account._need_fetch)
 
+    def test_init_populates_from_cache(self):
+        """Test that providing a cache at init populates _units immediately."""
+        account = KumoCloudAccount("user", "pass", kumo_dict=self.cached_dict)
+        self.assertIn("SERIAL1", account._units)
+        self.assertEqual(account._units["SERIAL1"]["label"], "Unit 1")
+        self.assertEqual(account._units["SERIAL1"]["address"], "192.168.1.10")
+
     @patch("pykumo.py_kumo_cloud_account.KumoCloudV3")
     @patch("pykumo.py_kumo_cloud_account.probe_ip")
     @patch("pykumo.py_kumo_cloud_account.probe_candidate_ips")
@@ -358,8 +370,8 @@ class TestKumoCloudAccount(unittest.TestCase):
             "SERIAL1": {
                 "serial": "SERIAL1",
                 "label": "U1",
-                "password": "pw1",
-                "cryptoSerial": "cs1",
+                "password": "cHcx",
+                "cryptoSerial": "0123456789ABCDEF01",
                 "mac": "mac1",
                 "unitType": "ductless",
             }
