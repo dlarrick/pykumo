@@ -1,6 +1,11 @@
 # Kumo Cloud API v3
 
-**Note**: This API summary is reverse-engineered and is a work in progress. This is not official documentation from Mistubishi, nor has their permission been sought to publish these findings.
+> [!CAUTION]
+> **This document is currently out of date.**
+> As of pykumo 0.5.0, the library has been fully migrated to the V3 API for all credential retrieval, and the legacy V2 API is no longer used. This document remains as a historical reference for the reverse-engineering process.
+
+**Note**: This API summary is reverse-engineered and is a work in progress.
+ This is not official documentation from Mistubishi, nor has their permission been sought to publish these findings.
 
 ## Summary
 The Mitsubishi Kumo Cloud API as used by its mobile apps has changed from a functional but quirky and dated version (with no published version number, as far as I can tell) to a v3 API that uses a more modern approach, with such features as refreshable [JWT](https://en.wikipedia.org/wiki/JSON_Web_Token) authentication and servers capable of using [HTTP/2](https://en.wikipedia.org/wiki/HTTP/2) connections.
@@ -15,7 +20,7 @@ Portions of the v3 API are not yet documented:
 - PATCH endpoint structure
 
 ## WebSocket interface
-More information -- including the indoor unit password -- is available via a WebSocket interface. [HA-Kumo-WS](https://github.com/EnumC/ha_kumo_ws) is an entirely cloud-based integration and has examples of using this WebSocket. 
+More information -- including the indoor unit password -- is available via a WebSocket interface. [HA-Kumo-WS](https://github.com/EnumC/ha_kumo_ws) is an entirely cloud-based integration and has examples of using this WebSocket.
 
 ## Hostname
 The scheme and hostname for all endpoints described below is https://app-prod.kumocloud.com/
@@ -83,7 +88,7 @@ The access token must be provided to all other API requests, in an Authenticatio
 
 ### Refresh
 
-If the access token has expired but the refresh token is still valid, a POST to the refresh endpoint with an `Authentication` header (as above) containing the refresh token will provide a response body as follows, bearing new access and refresh tokens. No username or password is required to refresh the tokens. 
+If the access token has expired but the refresh token is still valid, a POST to the refresh endpoint with an `Authentication` header (as above) containing the refresh token will provide a response body as follows, bearing new access and refresh tokens. No username or password is required to refresh the tokens.
 
 POST body:
 ```

@@ -48,9 +48,17 @@ python3
 Inside the Python shell:
 ```
 import pykumo
+account = pykumo.KumoCloudAccount.Factory(username="your@email.com", password="your-password")
+```
+Alternatively, you can call it without arguments to be prompted:
+```
 account = pykumo.KumoCloudAccount.Factory()
 ```
-This will prompt for your KumoCloud username and password.
+If you have a cached configuration, you can provide it directly:
+```
+account = pykumo.KumoCloudAccount.Factory(kumo_dict=my_cached_dict)
+```
+This will set up the account using the KumoCloud V3 API for credential retrieval and local IP discovery.
 
 ```
 account.get_indoor_units()
