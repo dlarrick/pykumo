@@ -64,7 +64,8 @@ class KumoCloudV3:
         try:
             resp = requests.post(
                 f"{V3_BASE_URL}/v3/login",
-                headers=V3_BASE_HEADERS, json=body,
+                headers=V3_BASE_HEADERS,
+                json=body,
                 timeout=V3_CLOUD_TIMEOUT,
             )
         except Exception as ex:
@@ -135,14 +136,18 @@ class KumoCloudV3:
         """Authenticated GET with automatic token refresh on 401."""
         url = f"{V3_BASE_URL}{path}"
         try:
-            resp = requests.get(url, headers=self._auth_headers(), timeout=V3_CLOUD_TIMEOUT)
+            resp = requests.get(
+                url, headers=self._auth_headers(), timeout=V3_CLOUD_TIMEOUT
+            )
         except Exception as ex:
             _LOGGER.warning("V3 GET %s error: %s", path, ex)
             return None
 
         if resp.status_code == 401 and self.refresh():
             try:
-                resp = requests.get(url, headers=self._auth_headers(), timeout=V3_CLOUD_TIMEOUT)
+                resp = requests.get(
+                    url, headers=self._auth_headers(), timeout=V3_CLOUD_TIMEOUT
+                )
             except Exception as ex:
                 _LOGGER.warning("V3 GET %s error after refresh: %s", path, ex)
                 return None
@@ -173,7 +178,9 @@ class KumoCloudV3:
 
     # ── Socket.IO Password Retrieval ────────────────────────
 
-    def get_passwords_via_websocket(self, device_serials: list, timeout_secs: int = 30) -> dict:
+    def get_passwords_via_websocket(
+        self, device_serials: list, timeout_secs: int = 30
+    ) -> dict:
         """Connect to Socket.IO and collect adapter_update events with passwords."""
         if not self._access_token:
             return {}
@@ -185,8 +192,9 @@ class KumoCloudV3:
             _LOGGER.warning("WebSocket password retrieval error: %s", ex)
             return {}
 
-    def _socketio_session(self, serials_needed: set, timeout_secs: int,
-                          _retried: bool = False) -> dict:
+    def _socketio_session(
+        self, serials_needed: set, timeout_secs: int, _retried: bool = False
+    ) -> dict:
         """Run a complete Socket.IO session: handshake, subscribe, poll.
 
         If the namespace connect is rejected (expired token), refreshes
@@ -195,13 +203,20 @@ class KumoCloudV3:
         passwords = {}
         session = requests.Session()
         try:
-            return self._socketio_poll(session, serials_needed, timeout_secs,
-                                       passwords, _retried)
+            return self._socketio_poll(
+                session, serials_needed, timeout_secs, passwords, _retried
+            )
         finally:
             session.close()
 
-    def _socketio_poll(self, session, serials_needed: set, timeout_secs: int,
-                       passwords: dict, _retried: bool) -> dict:
+    def _socketio_poll(
+        self,
+        session,
+        serials_needed: set,
+        timeout_secs: int,
+        passwords: dict,
+        _retried: bool,
+    ) -> dict:
         """Inner Socket.IO poll loop (session is managed by caller)."""
         base_params = {"EIO": "4", "transport": "polling"}
         headers = {"Authorization": f"Bearer {self._access_token}", "Accept": "*/*"}
@@ -209,8 +224,10 @@ class KumoCloudV3:
         # 1. Handshake
         try:
             resp = session.get(
-                f"{SOCKET_URL}/socket.io/", params=base_params,
-                headers=headers, timeout=15,
+                f"{SOCKET_URL}/socket.io/",
+                params=base_params,
+                headers=headers,
+                timeout=15,
             )
         except Exception as ex:
             _LOGGER.warning("Socket.IO handshake failed: %s", ex)
@@ -231,12 +248,21 @@ class KumoCloudV3:
         post_headers = {**headers, "Content-Type": "text/plain;charset=UTF-8"}
 
         def _post(data):
-            session.post(f"{SOCKET_URL}/socket.io/", params=poll_params,
-                         headers=post_headers, data=data, timeout=10)
+            session.post(
+                f"{SOCKET_URL}/socket.io/",
+                params=poll_params,
+                headers=post_headers,
+                data=data,
+                timeout=10,
+            )
 
         def _poll(timeout=10):
-            return session.get(f"{SOCKET_URL}/socket.io/", params=poll_params,
-                               headers=headers, timeout=timeout)
+            return session.get(
+                f"{SOCKET_URL}/socket.io/",
+                params=poll_params,
+                headers=headers,
+                timeout=timeout,
+            )
 
         # 2. Namespace connect
         _post(SIO_CONNECT)
@@ -246,7 +272,9 @@ class KumoCloudV3:
         if resp.ok and resp.text.startswith(SIO_CONNECT_ERROR) and not _retried:
             _LOGGER.info("Socket.IO namespace rejected, refreshing token...")
             if self.refresh():
-                return self._socketio_session(serials_needed, timeout_secs, _retried=True)
+                return self._socketio_session(
+                    serials_needed, timeout_secs, _retried=True
+                )
             _LOGGER.warning("Token refresh failed")
             return passwords
 
@@ -258,7 +286,9 @@ class KumoCloudV3:
             if resp.ok:
                 self._extract_passwords(resp.text, passwords, serials_needed)
         else:
-            _LOGGER.warning("Could not extract user ID — adapter_update events may not arrive")
+            _LOGGER.warning(
+                "Could not extract user ID — adapter_update events may not arrive"
+            )
 
         # 4. Subscribe to each device
         _post("\x1e".join(f'{SIO_EVENT}["subscribe","{s}"]' for s in serials_needed))
@@ -267,14 +297,18 @@ class KumoCloudV3:
             self._extract_passwords(resp.text, passwords, serials_needed)
 
         # 5. Force adapter_update events (contains passwords)
-        _post("\x1e".join(
-            f'{SIO_EVENT}["force_adapter_request","{s}","adapterStatus"]'
-            for s in serials_needed
-        ))
+        _post(
+            "\x1e".join(
+                f'{SIO_EVENT}["force_adapter_request","{s}","adapterStatus"]'
+                for s in serials_needed
+            )
+        )
 
         # 6. Send device_status_v2 to trigger updates
         status_msgs = [f'{SIO_EVENT}["device_status_v2",""]']
-        status_msgs.extend(f'{SIO_EVENT}["device_status_v2","{s}"]' for s in serials_needed)
+        status_msgs.extend(
+            f'{SIO_EVENT}["device_status_v2","{s}"]' for s in serials_needed
+        )
         _post("\x1e".join(status_msgs))
 
         # 7. Poll for adapter_update events
@@ -308,8 +342,12 @@ class KumoCloudV3:
                 except Exception:
                     pass
 
-        _LOGGER.info("Socket.IO: found passwords for %d/%d devices (%d polls)",
-                      len(passwords), len(serials_needed), poll_count)
+        _LOGGER.info(
+            "Socket.IO: found passwords for %d/%d devices (%d polls)",
+            len(passwords),
+            len(serials_needed),
+            poll_count,
+        )
         return passwords
 
     @staticmethod
@@ -330,13 +368,16 @@ class KumoCloudV3:
                 continue
 
             try:
-                payload = json.loads(msg[len(SIO_EVENT):])
+                payload = json.loads(msg[len(SIO_EVENT) :])
             except (json.JSONDecodeError, IndexError):
                 continue
 
-            if (isinstance(payload, list) and len(payload) >= 2
-                    and payload[0] == "adapter_update"
-                    and isinstance(payload[1], dict)):
+            if (
+                isinstance(payload, list)
+                and len(payload) >= 2
+                and payload[0] == "adapter_update"
+                and isinstance(payload[1], dict)
+            ):
                 serial = payload[1].get("deviceSerial", "")
                 password = payload[1].get("password", "")
                 if serial in serials_needed and password:
@@ -388,14 +429,21 @@ class KumoCloudV3:
                     devices[serial]["cryptoSerial"] = crypto
 
         # Get passwords via Socket.IO
-        passwords = self.get_passwords_via_websocket(list(devices.keys()), timeout_secs=60)
+        passwords = self.get_passwords_via_websocket(
+            list(devices.keys()), timeout_secs=60
+        )
         for serial, password in passwords.items():
             if serial in devices:
                 devices[serial]["password"] = password
 
         has_crypto = sum(1 for d in devices.values() if d.get("cryptoSerial"))
         has_pw = sum(1 for d in devices.values() if d.get("password"))
-        _LOGGER.info("V3 credentials: %d/%d cryptoSerial, %d/%d password",
-                      has_crypto, len(devices), has_pw, len(devices))
+        _LOGGER.info(
+            "V3 credentials: %d/%d cryptoSerial, %d/%d password",
+            has_crypto,
+            len(devices),
+            has_pw,
+            len(devices),
+        )
 
         return devices

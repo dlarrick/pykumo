@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="pykumo",
-    version="0.4.2",
+    version="0.5.0",
     author="Doug Larrick",
     author_email="doug@parkercat.org",
     description="Small library for interfacing with Mitsubishi KumoCloud enabled devices",
@@ -13,7 +13,7 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/dlarrick/pykumo",
     packages=setuptools.find_packages(),
-    install_requires=['requests', 'urllib3'],
+    install_requires=["requests", "urllib3"],
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",

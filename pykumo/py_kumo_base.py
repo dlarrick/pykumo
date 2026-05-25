@@ -1,5 +1,4 @@
-""" Class used to represent indoor units
-"""
+"""Class used to represent indoor units"""
 
 import hashlib
 import base64
@@ -10,8 +9,13 @@ import threading
 import requests
 from requests.adapters import HTTPAdapter
 from requests.exceptions import Timeout
-from .const import (CACHE_INTERVAL_SECONDS, W_PARAM, S_PARAM, UNIT_CONNECT_TIMEOUT_SECONDS,
-                    UNIT_RESPONSE_TIMEOUT_SECONDS)
+from .const import (
+    CACHE_INTERVAL_SECONDS,
+    W_PARAM,
+    S_PARAM,
+    UNIT_CONNECT_TIMEOUT_SECONDS,
+    UNIT_RESPONSE_TIMEOUT_SECONDS,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -38,14 +42,15 @@ def _get_session(address: str) -> requests.Session:
     if session is None:
         _LOGGER.debug(
             "Opening Session for %s on thread %s",
-            address, threading.current_thread().name
+            address,
+            threading.current_thread().name,
         )
         session = requests.Session()
         adapter = HTTPAdapter(
-            max_retries=0,         # we handle retries ourselves
+            max_retries=0,  # we handle retries ourselves
             pool_connections=1,
             pool_maxsize=1,
-            pool_block=True,       # serialize rather than opening a second conn
+            pool_block=True,  # serialize rather than opening a second conn
         )
         session.mount("http://", adapter)
         _tl.sessions[address] = session
@@ -69,53 +74,57 @@ def _drop_session(address: str) -> None:
             pass
         _LOGGER.debug(
             "Closed Session for %s on thread %s",
-            address, threading.current_thread().name
+            address,
+            threading.current_thread().name,
         )
 
 
 class PyKumoBase:
-    """ Talk to and control one indoor unit.
-    """
+    """Talk to and control one indoor unit."""
+
     # pylint: disable=R0904, R0902
 
     def __init__(self, name, addr, cfg_json, timeouts=None, serial=None):
-        """ Constructor
-        """
+        """Constructor"""
         self._name = name
         self._address = addr
         self._serial = serial
         self._security = {
-            'password': base64.b64decode(cfg_json["password"]),
-            'crypto_serial': bytearray.fromhex(cfg_json["crypto_serial"])}
+            "password": base64.b64decode(cfg_json["password"]),
+            "crypto_serial": bytearray.fromhex(cfg_json["crypto_serial"]),
+        }
         if not timeouts:
             _LOGGER.info("Use default timeouts")
-            self._timeouts = (UNIT_CONNECT_TIMEOUT_SECONDS,
-                              UNIT_RESPONSE_TIMEOUT_SECONDS)
+            self._timeouts = (
+                UNIT_CONNECT_TIMEOUT_SECONDS,
+                UNIT_RESPONSE_TIMEOUT_SECONDS,
+            )
         else:
             _LOGGER.info("Use timeouts=%s", str(timeouts))
-            connect_timeout = timeouts[0] if timeouts[0] else UNIT_CONNECT_TIMEOUT_SECONDS
-            response_timeout = timeouts[1] if timeouts[1] else UNIT_RESPONSE_TIMEOUT_SECONDS
+            connect_timeout = (
+                timeouts[0] if timeouts[0] else UNIT_CONNECT_TIMEOUT_SECONDS
+            )
+            response_timeout = (
+                timeouts[1] if timeouts[1] else UNIT_RESPONSE_TIMEOUT_SECONDS
+            )
             self._timeouts = (connect_timeout, response_timeout)
         self._status = {}
         self._profile = {}
         self._sensors = []
         self._last_status_update = time.monotonic() - 2 * CACHE_INTERVAL_SECONDS
 
-
     def _token(self, post_data):
-        """ Compute URL including security token for a given command
-        """
-        data_hash = hashlib.sha256(self._security['password'] +
-                                   post_data).digest()
+        """Compute URL including security token for a given command"""
+        data_hash = hashlib.sha256(self._security["password"] + post_data).digest()
 
         intermediate = bytearray(88)
         intermediate[0:32] = W_PARAM[0:32]
         intermediate[32:64] = data_hash[0:32]
         intermediate[64:66] = bytearray.fromhex("0840")
         intermediate[66] = S_PARAM
-        intermediate[79] = self._security['crypto_serial'][8]
-        intermediate[80:84] = self._security['crypto_serial'][4:8]
-        intermediate[84:88] = self._security['crypto_serial'][0:4]
+        intermediate[79] = self._security["crypto_serial"][8]
+        intermediate[80:84] = self._security["crypto_serial"][4:8]
+        intermediate[84:88] = self._security["crypto_serial"][0:4]
 
         token = hashlib.sha256(intermediate).hexdigest()
 
@@ -163,7 +172,7 @@ class PyKumoBase:
         self.end_cycle()
 
     def _request(self, post_data):
-        """ Send request to configured unit and return response dict.
+        """Send request to configured unit and return response dict.
 
         Connection lifecycle:
         - Inside a cycle (begin_cycle() called): keep the session open
@@ -184,16 +193,18 @@ class PyKumoBase:
         url = "http://" + self._address + "/api"
         token = self._token(post_data)
         headers = {
-            'Accept': 'application/json, text/plain, */*',
-            'Content-Type': 'application/json',
+            "Accept": "application/json, text/plain, */*",
+            "Content-Type": "application/json",
         }
-        token_param = {'m': token}
+        token_param = {"m": token}
 
         for attempt in range(2):
             session = _get_session(self._address)
             response = None
             try:
-                _LOGGER.debug("Issue request %s %s (attempt %d)", url, post_data, attempt)
+                _LOGGER.debug(
+                    "Issue request %s %s (attempt %d)", url, post_data, attempt
+                )
                 response = session.put(
                     url,
                     headers=headers,
@@ -209,7 +220,7 @@ class PyKumoBase:
                 response.close()
                 response = None
 
-                result = json.loads(content.decode('utf-8'))
+                result = json.loads(content.decode("utf-8"))
 
                 # Close the session if this is a single-shot call
                 # (outside any multi-request cycle).
@@ -219,9 +230,7 @@ class PyKumoBase:
                 return result
 
             except Timeout as ex:
-                _LOGGER.debug(
-                    "Timeout on attempt %d for %s: %s", attempt, url, str(ex)
-                )
+                _LOGGER.debug("Timeout on attempt %d for %s: %s", attempt, url, str(ex))
                 self._cleanup_response(response)
                 # A timeout means the connection state is unknowable —
                 # drop it rather than risk reusing a half-dead socket.
@@ -232,9 +241,7 @@ class PyKumoBase:
                 # attempt == 0: fall through to retry with a fresh session
 
             except (json.JSONDecodeError, ValueError) as ex:
-                _LOGGER.warning(
-                    "Malformed response from %s: %s", url, str(ex)
-                )
+                _LOGGER.warning("Malformed response from %s: %s", url, str(ex))
                 self._cleanup_response(response)
                 _drop_session(self._address)
                 return {}
@@ -242,7 +249,10 @@ class PyKumoBase:
             except Exception as ex:
                 _LOGGER.debug(
                     "Request error on attempt %d for %s: %s (%s)",
-                    attempt, url, str(ex), type(ex).__name__
+                    attempt,
+                    url,
+                    str(ex),
+                    type(ex).__name__,
                 )
                 self._cleanup_response(response)
                 _drop_session(self._address)
@@ -253,39 +263,39 @@ class PyKumoBase:
         return {}
 
     def get_status(self):
-        """ Last retrieved status dictionary from unit """
+        """Last retrieved status dictionary from unit"""
         return self._status
 
     def update_status(self):
-        """ Retrieve and cache current status dictionary if enough time
-            has passed
+        """Retrieve and cache current status dictionary if enough time
+        has passed
         """
         raise NotImplementedError()
 
     def get_name(self):
-        """ Unit's name """
+        """Unit's name"""
         return self._name
 
     def get_serial(self):
-        """ Unit's serial number """
+        """Unit's serial number"""
         return self._serial
 
     def get_sensor_rssi(self):
-        """ Last retrievd sensor signal strength, if any """
+        """Last retrieved sensor signal strength, if any"""
         val = None
         try:
             for sensor in self._sensors:
-                if sensor['rssi'] is not None:
-                    return sensor['rssi']
+                if sensor["rssi"] is not None:
+                    return sensor["rssi"]
         except KeyError:
             val = None
         return val
 
     def get_wifi_rssi(self):
-        """ Last retrieved WiFi signal strengh, if any """
+        """Last retrieved WiFi signal strength, if any"""
         val = None
         try:
-            val = self._profile['wifiRSSI']
+            val = self._profile["wifiRSSI"]
         except KeyError:
             val = None
         return val

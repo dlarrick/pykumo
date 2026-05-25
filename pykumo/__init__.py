@@ -1,8 +1,4 @@
-""" Module to interact with Mitsubishi KumoCloud devices via their local API.
-"""
-
-__version__ = '0.4.2'
-name = "pykumo"
+"""Module to interact with Mitsubishi KumoCloud devices via their local API."""
 
 from .py_kumo_cloud_account import KumoCloudAccount
 from .py_kumo_cloud_account_v3 import KumoCloudV3
@@ -10,3 +6,15 @@ from .py_kumo_discovery import probe_candidate_ips
 from .py_kumo import PyKumo
 from .py_kumo_base import PyKumoBase
 from .py_kumo_station import PyKumoStation
+
+__version__ = "0.5.0"
+name = "pykumo"
+
+__all__ = [
+    "KumoCloudAccount",
+    "KumoCloudV3",
+    "probe_candidate_ips",
+    "PyKumo",
+    "PyKumoBase",
+    "PyKumoStation",
+]

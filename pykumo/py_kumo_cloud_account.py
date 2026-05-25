@@ -1,17 +1,13 @@
-""" Class used to represent the Kumo Cloud service
-"""
+"""Class used to represent the Kumo Cloud service"""
 
-import json
 import logging
 import re
-import requests
-from requests.exceptions import Timeout
+import base64
 from getpass import getpass
 from .py_kumo import PyKumo
 from .py_kumo_station import PyKumoStation
 from .py_kumo_cloud_account_v3 import KumoCloudV3
-from .py_kumo_discovery import probe_candidate_ips
-from .const import KUMO_CONNECT_TIMEOUT_SECONDS, KUMO_RESPONSE_TIMEOUT_SECONDS
+from .py_kumo_discovery import probe_candidate_ips, probe_ip
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -20,284 +16,241 @@ KUMO_UNIT_TYPE_TO_CLASS = {
     "mvz": PyKumo,
     "sez": PyKumo,
     "pead": PyKumo,
-    "headless": PyKumoStation
+    "headless": PyKumoStation,
 }
 
 
 class KumoCloudAccount:
-    """ API to talk to KumoCloud servers
-    """
+    """API to talk to KumoCloud servers"""
+
     def __init__(self, username, password, kumo_dict=None):
-        """ Constructor from URL
-        """
+        """Constructor from URL"""
         self._username = username
         self._password = password
         self._units = {}
+        self._kumo_dict = kumo_dict
+        self._need_fetch = kumo_dict is None
         if kumo_dict:
-            self._url = None
-            self._kumo_dict = kumo_dict
-            self._need_fetch = False
-        else:
-            self._url = "https://geo-c.kumocloud.com/login"
-            self._kumo_dict = None
-            self._need_fetch = True
+            self._load_from_cache()
+
+    def _load_from_cache(self):
+        """Populate _units from existing _kumo_dict."""
+        cached_units = self._extract_cached_units()
+        self._units = {}
+        for serial, unit_data in cached_units.items():
+            if unit_data.get("password") and unit_data.get("cryptoSerial"):
+                self._units[serial] = self._parse_unit(unit_data)
+        _LOGGER.info("Initialized with %d units from cache", len(self._units))
 
     @staticmethod
-    def Factory(username=None, password=None):
-        """Factory that prompts for username/password if not given
-        """
-        if username is None:
-            username = input('Kumo Cloud username: ')
-        if password is None:
-            password = getpass()
+    def Factory(username=None, password=None, kumo_dict=None):
+        """Factory that prompts for username/password if not given"""
+        if kumo_dict is None:
+            if username is None:
+                username = input("Kumo Cloud username: ")
+            if password is None:
+                password = getpass()
 
-        return KumoCloudAccount(username, password)
+        return KumoCloudAccount(username, password, kumo_dict)
 
     @staticmethod
     def _parse_unit(raw_unit):
-        """ Parse needed fields from raw json and return dict representing
-            a unit
+        """Parse needed fields from raw json and return dict representing
+        a unit
         """
-        fields = {'serial', 'label', 'address', 'password', 'cryptoSerial', 'mac', 'unitType'}
+        fields = {
+            "serial",
+            "label",
+            "address",
+            "password",
+            "cryptoSerial",
+            "mac",
+            "unitType",
+        }
         # Not all fields are always present; e.g. 'address'
         common_fields = fields & raw_unit.keys()
         return {field: raw_unit[field] for field in common_fields}
 
     def _fetch_if_needed(self):
-        """ Fetch configuration from server.
-        """
-        if self._url and self._need_fetch:
-            headers = {'Accept': 'application/json, text/plain, */*',
-                       'Accept-Encoding': 'gzip, deflate, br',
-                       'Accept-Language': 'en-US,en',
-                       'Content-Type': 'application/json'}
+        """Fetch configuration from server if not already done."""
+        if self._need_fetch:
+            self.try_setup()
 
-            body = {"username": self._username,
-                    "password": self._password,
-                    "appVersion": "2.2.0"}
-            try:
-                response = requests.post(self._url, headers=headers, data=json.dumps(body),
-                                         timeout=(KUMO_CONNECT_TIMEOUT_SECONDS,
-                                                  KUMO_RESPONSE_TIMEOUT_SECONDS))
-            except Timeout as ex:
-                response = None
-                _LOGGER.warning("Timeout querying KumoCloud: %s", str(ex))
-            if response:
-                if response.ok:
-                    self._kumo_dict = response.json()
-                else:
-                    _LOGGER.warning("Error response from KumoCloud: %s %s}",
-                                    str(response.status_code), response.text)
-            # Only try to fetch once
-            self._need_fetch = False
-            if not self._kumo_dict:
-                _LOGGER.warning("No JSON returned from KumoCloud; check credentials?")
-                return
-
-        self._units = {}
-        try:
-            for child in self._kumo_dict[2]['children']:
-                for raw_unit in child['zoneTable'].values():
-                    unit = self._parse_unit(raw_unit)
-                    serial = unit['serial']
-                    self._units[serial] = unit
-                if 'children' in child:
-                    for grandchild in child['children']:
-                        for raw_unit in grandchild['zoneTable'].values():
-                            unit = self._parse_unit(raw_unit)
-                            serial = unit['serial']
-                            self._units[serial] = unit
-        except KeyError:
-            pass
-
-        # After V2 fetch, supplement missing credentials from V3 API
-        if self._username and self._password:
-            self._supplement_with_v3()
-
-    def _supplement_with_v3(self):
-        """Use the V3 API to fill in missing credentials (password, cryptoSerial).
-
-        After the Kumo Cloud migration, the V2 API may return stale or missing
-        passwords. The V3 API provides current data via REST and WebSocket.
-        """
-        missing = [s for s, u in self._units.items()
-                   if not u.get('password') or not u.get('cryptoSerial')]
-        if not missing:
-            _LOGGER.debug("All V2 credentials complete; skipping V3 supplement")
-            return
-
-        _LOGGER.info("V2 data incomplete for %d units, trying V3 API...", len(missing))
-
-        try:
-            v3 = KumoCloudV3(self._username, self._password)
-            v3_devices = v3.get_all_device_credentials()
-        except Exception as ex:
-            _LOGGER.warning("V3 credential retrieval failed: %s", ex)
-            return
-
-        if not v3_devices:
-            return
-
-        # Merge V3 data into units and raw dict
-        updated = 0
-        for serial, unit in self._units.items():
-            v3_dev = v3_devices.get(serial)
-            if not v3_dev:
-                continue
-            for field in ('password', 'cryptoSerial'):
-                if not unit.get(field) and v3_dev.get(field):
-                    unit[field] = v3_dev[field]
-                    updated += 1
-
-        if updated > 0 and self._kumo_dict:
-            self._update_raw_dict_credentials(v3_devices)
-
-        _LOGGER.info("V3 supplement: updated %d fields", updated)
-
-    def _update_raw_dict_credentials(self, v3_devices):
-        """Update raw kumo_dict with V3-sourced credentials for cache writes."""
-        try:
-            for child in self._kumo_dict[2]['children']:
-                for serial, raw_unit in child['zoneTable'].items():
-                    self._merge_v3_fields(raw_unit, v3_devices.get(serial))
-                for grandchild in child.get('children', []):
-                    for serial, raw_unit in grandchild['zoneTable'].items():
-                        self._merge_v3_fields(raw_unit, v3_devices.get(serial))
-        except (KeyError, IndexError):
-            pass
-
-    @staticmethod
-    def _merge_v3_fields(raw_unit, v3_dev):
-        """Merge password/cryptoSerial from V3 into a raw unit dict."""
-        if not v3_dev:
-            return
-        for field in ('password', 'cryptoSerial'):
-            if v3_dev.get(field) and not raw_unit.get(field):
-                raw_unit[field] = v3_dev[field]
-
-    def try_setup(self):
-        """Try to set up and return success/failure"""
-        self._fetch_if_needed()
-
-        return len(self._units.keys()) > 0
-
-    def try_setup_v3_only(self, candidate_ips=None):
-        """Set up using only the V3 API (skip V2 entirely).
-
-        Useful when V2 API is broken for an account. Builds a minimal
-        V2-compatible kumo_dict from V3 data, preserving any device
-        addresses from a previously cached kumo_dict.
+    def try_setup(self, candidate_ips=None, prefer_cache=False):
+        """Set up the account, prioritizing V3 API and preserving cache.
 
         Args:
             candidate_ips: Optional dict of {mac_address: ip_address} from
-                          DHCP discovery. Used to auto-discover device IPs
-                          via credential probing.
+                          DHCP discovery. Used to discover device IPs.
+            prefer_cache: If True, skip Cloud fetch if a valid cache is present.
         """
-        if not self._username or not self._password:
-            _LOGGER.warning("Cannot use V3-only setup without credentials")
-            return False
-
-        # Preserve cached units before overwriting _kumo_dict
+        # 1. Extract Cache
         cached_units = self._extract_cached_units()
 
-        failed_str = ""
+        # 2. Cloud Fetch
         v3_devices = {}
-        try:
-            v3 = KumoCloudV3(self._username, self._password)
-            v3_devices = v3.get_all_device_credentials()
-        except Exception as ex:
-            failed_str = str(ex)
+        v3_error = None
+        if not (prefer_cache and cached_units) and self._username and self._password:
+            try:
+                v3 = KumoCloudV3(self._username, self._password)
+                v3_devices = v3.get_all_device_credentials()
+            except Exception as ex:
+                v3_error = str(ex)
+                _LOGGER.warning("V3 cloud fetch failed: %s", v3_error)
 
-        if not failed_str and not v3_devices:
-            failed_str = "no devices from v3 API"
-        if failed_str:
-            _LOGGER.warning("V3-only setup failed: %s, using %d cached units", failed_str, len(cached_units))
-            if cached_units:
-                # We have good cached units, so just use those and keep the kumo_dict intact
-                self._units = {}
-                for serial, unit_data in cached_units.items():
-                    self._units[serial] = self._parse_unit(unit_data)
-                self._need_fetch = False
-            return bool(cached_units)
+        # 3. Handle Cloud Failure / Merge
+        # If Cloud failed entirely or returned nothing, fall back to Cache
+        if not v3_devices and cached_units:
+            _LOGGER.info("Using %d cached units as primary source", len(cached_units))
+            source_devices = cached_units
+        else:
+            source_devices = v3_devices
+            # Supplement Cloud with Cache if Cloud is incomplete
+            for serial, cached_dev in cached_units.items():
+                if serial not in source_devices:
+                    _LOGGER.info(
+                        "Preserving unit %s from cache (missing in Cloud)", serial
+                    )
+                    source_devices[serial] = cached_dev
+                else:
+                    cloud_dev = source_devices[serial]
+                    for field in ("password", "cryptoSerial", "address", "mac"):
+                        if not cloud_dev.get(field) and cached_dev.get(field):
+                            cloud_dev[field] = cached_dev[field]
 
-        # Build V2-compatible kumo_dict from V3 data
-        zone_table = {}
-        for serial, dev in v3_devices.items():
-            cached_unit = cached_units.get(serial, {})
-            entry = {
+        if not source_devices:
+            _LOGGER.warning("No devices found in Cloud or Cache")
+            return False
+
+        # 4. Address Resolution & Validation
+        final_units = {}
+        for serial, dev in source_devices.items():
+            unit = {
                 "serial": serial,
-                "label": dev["label"] if dev.get("label") else cached_unit.get("label", ""),
-                "password": dev["password"] if dev.get("password") else cached_unit.get("password", ""),
-                "cryptoSerial": dev["cryptoSerial"] if dev.get("cryptoSerial") else cached_unit.get("cryptoSerial", ""),
-                "mac": dev["mac"] if dev.get("mac") else cached_unit.get("mac", ""),
-                "unitType": dev["unitType"] if dev.get("unitType") else cached_unit.get("unitType", "ductless"),
-                "address": cached_unit.get("address", "")
+                "label": dev.get("label", ""),
+                "password": dev.get("password", ""),
+                "cryptoSerial": dev.get("cryptoSerial", ""),
+                "mac": dev.get("mac", ""),
+                "unitType": dev.get("unitType", "ductless"),
+                "address": dev.get("address", ""),
             }
-            zone_table[serial] = entry
 
-        # Auto-discover IPs for units missing addresses via credential probing
-        missing = {s: e for s, e in zone_table.items() if not e.get("address")}
-        _LOGGER.info("Looking for addresses for %d missing units, have %d candidate IPs", len(missing), len(candidate_ips or {}))
-        if missing and candidate_ips:
+            # Check reachability if we have an address
+            reachable = False
+            if unit["address"]:
+                try:
+                    # The local API expects:
+                    # password: bytes (base64 decoded)
+                    # crypto_serial: bytearray (hex decoded)
+                    creds = {
+                        "password": base64.b64decode(unit["password"]),
+                        "crypto_serial": bytearray.fromhex(unit["cryptoSerial"]),
+                    }
+                    if probe_ip(unit["address"], creds, timeout=2.0):
+                        reachable = True
+                    else:
+                        _LOGGER.info(
+                            "Unit %s unreachable at %s; will attempt discovery",
+                            serial,
+                            unit["address"],
+                        )
+                except Exception as ex:
+                    _LOGGER.info("Skipping reachability check for %s: %s", serial, ex)
+
+            unit["reachable"] = reachable
+            final_units[serial] = unit
+
+        # 5. Discovery for unaddressed/unreachable units
+        to_discover = {s: u for s, u in final_units.items() if not u["reachable"]}
+        if to_discover and candidate_ips:
+            _LOGGER.info(
+                "Probing %d candidate IPs for %d missing/unreachable units",
+                len(candidate_ips),
+                len(to_discover),
+            )
             ips_to_probe = list(candidate_ips.values())
             ip_to_mac = {ip: mac for mac, ip in candidate_ips.items()}
-            _LOGGER.info("Probing %d DHCP IPs for %d unaddressed devices",
-                         len(ips_to_probe), len(missing))
-            matched = probe_candidate_ips(missing, ips_to_probe)
+            matched = probe_candidate_ips(to_discover, ips_to_probe)
             for serial, ip in matched.items():
-                zone_table[serial]["address"] = ip
-                # Also populate the MAC from the DHCP mapping
-                mac = ip_to_mac.get(ip, "")
-                if mac:
-                    zone_table[serial]["mac"] = mac
-                _LOGGER.info("Discovered %s -> %s (mac=%s)",
-                             serial, ip, mac)
+                final_units[serial]["address"] = ip
+                final_units[serial]["reachable"] = True
+                if not final_units[serial].get("mac"):
+                    final_units[serial]["mac"] = ip_to_mac.get(ip, "")
+                _LOGGER.info(
+                    "Discovered %s -> %s (mac=%s)",
+                    serial,
+                    ip,
+                    final_units[serial]["mac"],
+                )
 
-        # Remove units that were not found
-        zone_table = {s:e for s, e in zone_table.items() if e.get("address")}
+        # 6. Finalize & Preservation
+        # Build _units map (only those with credentials)
+        self._units = {}
+        for serial, unit_data in final_units.items():
+            if unit_data.get("password") and unit_data.get("cryptoSerial"):
+                # We keep the unit in _units even if address is missing,
+                # though PyKumo will fail to connect. This preserves HA entities.
+                self._units[serial] = self._parse_unit(unit_data)
+
+        # Update kumo_dict for future caching
+        # We wrap it in the expected v2-like structure for HA compatibility
+        zone_table = {s: u for s, u in final_units.items()}
         self._kumo_dict = [
             {},  # account info placeholder
             {},  # preferences placeholder
             {"children": [{"zoneTable": zone_table}]},
         ]
         self._need_fetch = False
-
-        self._units = {}
-        for serial, unit_data in zone_table.items():
-            self._units[serial] = self._parse_unit(unit_data)
-
-        _LOGGER.info("V3-only setup: found %d devices", len(self._units))
+        _LOGGER.info("Setup complete: %d units configured", len(self._units))
         return len(self._units) > 0
 
+    def try_setup_v3_only(self, candidate_ips=None):
+        """Deprecated: Use try_setup instead."""
+        return self.try_setup(candidate_ips)
+
     def _extract_cached_units(self) -> dict:
-        """Extract fully-formed units from current kumo_dict."""
+        """Extract units from current kumo_dict, requiring only identity credentials."""
         units = {}
         if not self._kumo_dict:
             return units
-        fields = ['serial', 'label', 'password', 'address', 'cryptoSerial', 'mac', 'unitType']
+
+        required = ["serial", "password", "cryptoSerial"]
+        optional = ["label", "address", "mac", "unitType"]
+
         try:
-            for child in self._kumo_dict[2]['children']:
-                for raw_unit in child['zoneTable'].values():
+            for child in self._kumo_dict[2]["children"]:
+                for raw_unit in child["zoneTable"].values():
                     saved_unit = {}
-                    for field in fields:
+                    # Always copy required fields
+                    for field in required:
                         if raw_unit.get(field):
                             saved_unit[field] = raw_unit[field]
-                    if all(field in saved_unit for field in fields):
-                        serial = saved_unit['serial']
+
+                    # Only copy optional if present, no need for truthy check
+                    for field in optional:
+                        saved_unit[field] = raw_unit.get(field, "")
+
+                    if all(field in saved_unit for field in required):
+                        serial = saved_unit["serial"]
                         units[serial] = saved_unit
-                for grandchild in child.get('children', []):
-                    for raw_unit in grandchild['zoneTable'].values():
+
+                # Same logic for grandchildren if they exist
+                for grandchild in child.get("children", []):
+                    for raw_unit in grandchild["zoneTable"].values():
                         saved_unit = {}
-                        for field in fields:
+                        for field in required:
                             if raw_unit.get(field):
                                 saved_unit[field] = raw_unit[field]
-                        if all(field in saved_unit for field in fields):
-                            serial = saved_unit['serial']
+                        for field in optional:
+                            saved_unit[field] = raw_unit.get(field, "")
+                        if all(field in saved_unit for field in required):
+                            serial = saved_unit["serial"]
                             units[serial] = saved_unit
         except (KeyError, IndexError, TypeError):
             pass
+
         if units:
-            _LOGGER.info("Preserved %d fully cached units", len(units))
+            _LOGGER.info("Preserved %d cached units", len(units))
         return units
 
     def get_raw_json(self):
@@ -305,33 +258,27 @@ class KumoCloudAccount:
         return self._kumo_dict
 
     def get_all_units(self):
-        """ Return list of all unit serial numbers
-        """
+        """Return list of all unit serial numbers"""
         self._fetch_if_needed()
 
         return self._units.keys()
 
     def get_indoor_units(self):
-        """ Return list of indoor unit serial numbers
-        """
+        """Return list of indoor unit serial numbers"""
 
-        return list(filter(
-            lambda x: self.is_indoor_unit(x), self.get_all_units()))
+        return list(filter(lambda x: self.is_indoor_unit(x), self.get_all_units()))
 
     def get_kumo_stations(self):
-        """ Return list of kumo station serial numbers
-        """
+        """Return list of kumo station serial numbers"""
 
-        return list(filter(
-            lambda x: self.is_headless_unit(x), self.get_all_units()))
+        return list(filter(lambda x: self.is_headless_unit(x), self.get_all_units()))
 
     def get_name(self, unit):
-        """ Return name of given unit
-        """
+        """Return name of given unit"""
         self._fetch_if_needed()
 
         try:
-            return self._units[unit]['label']
+            return self._units[unit]["label"]
 
         except KeyError:
             pass
@@ -339,8 +286,7 @@ class KumoCloudAccount:
         return None
 
     def is_indoor_unit(self, unit):
-        """ Return whether unit is an indoor unit
-        """
+        """Return whether unit is an indoor unit"""
         self._fetch_if_needed()
 
         unit_type = self.get_unit_type(unit)
@@ -349,8 +295,7 @@ class KumoCloudAccount:
         return True
 
     def is_headless_unit(self, unit):
-        """ Return whether unit is a headless unit (KumoStation)
-        """
+        """Return whether unit is a headless unit (KumoStation)"""
         self._fetch_if_needed()
 
         unit_type = self.get_unit_type(unit)
@@ -359,12 +304,11 @@ class KumoCloudAccount:
         return False
 
     def get_unit_type(self, unit):
-        """ Return unit type of given unit
-        """
+        """Return unit type of given unit"""
         self._fetch_if_needed()
 
         try:
-            return self._units[unit]['unitType']
+            return self._units[unit]["unitType"]
 
         except KeyError:
             pass
@@ -372,12 +316,11 @@ class KumoCloudAccount:
         return None
 
     def get_address(self, unit):
-        """ Return IP address of named unit
-        """
+        """Return IP address of named unit"""
         self._fetch_if_needed()
 
         try:
-            return self._units[unit]['address']
+            return self._units[unit]["address"]
 
         except KeyError:
             pass
@@ -385,12 +328,11 @@ class KumoCloudAccount:
         return None
 
     def get_mac(self, unit):
-        """ Return mac address of named unit
-        """
+        """Return mac address of named unit"""
         self._fetch_if_needed()
 
         try:
-            return self._units[unit]['mac']
+            return self._units[unit]["mac"]
 
         except KeyError:
             pass
@@ -398,13 +340,14 @@ class KumoCloudAccount:
         return None
 
     def get_credentials(self, unit):
-        """ Return dict of credentials required to talk to unit
-        """
+        """Return dict of credentials required to talk to unit"""
         self._fetch_if_needed()
 
         try:
-            credentials = {'password': self._units[unit]['password'],
-                           'crypto_serial': self._units[unit]['cryptoSerial']}
+            credentials = {
+                "password": self._units[unit]["password"],
+                "crypto_serial": self._units[unit]["cryptoSerial"],
+            }
             return credentials
 
         except KeyError:
@@ -413,7 +356,7 @@ class KumoCloudAccount:
         return None
 
     def make_pykumos(self, timeouts=None, init_update_status=True, use_schedule=False):
-        """ Return a dict mapping names of all indoor units to newly-created
+        """Return a dict mapping names of all indoor units to newly-created
         `PyKumoBase` objects
         """
         kumos = {}
@@ -422,12 +365,12 @@ class KumoCloudAccount:
             if name in kumos:
                 # I'm not sure if it's possible to have the same name repeated,
                 # but just in case...
-                m = re.match(r'(.*) \(([0-9]*)\)', name)
+                m = re.match(r"(.*) \(([0-9]*)\)", name)
                 if m:
-                    name = m.group(1) + ' ({})'.format(int(m.group(2)) + 1)
+                    name = m.group(1) + " ({})".format(int(m.group(2)) + 1)
                 else:
-                    kumos[name + ' (1)'] = kumos.pop(name)
-                    name = name + ' (2)'
+                    kumos[name + " (1)"] = kumos.pop(name)
+                    name = name + " (2)"
                 # results in a name like "A/C unit (2)"
             unitType = self.get_unit_type(unitSerial)
 

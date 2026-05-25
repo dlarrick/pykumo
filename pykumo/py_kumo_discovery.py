@@ -25,9 +25,9 @@ _LOGGER = logging.getLogger(__name__)
 _PROBE_QUERY = b'{"c":{"indoorUnit":{"status":{}}}}'
 
 
-def probe_candidate_ips(devices: Dict[str, dict],
-                        candidate_ips: List[str],
-                        timeout: float = 3.0) -> Dict[str, str]:
+def probe_candidate_ips(
+    devices: Dict[str, dict], candidate_ips: List[str], timeout: float = 3.0
+) -> Dict[str, str]:
     """Probe candidate IPs to match device serials to addresses.
 
     For each candidate IP, tries authenticating with each unmatched device's
@@ -56,8 +56,11 @@ def probe_candidate_ips(devices: Dict[str, dict],
         try:
             crypto = bytearray.fromhex(crypto_hex)
             if len(crypto) < 9:
-                _LOGGER.debug("Skipping %s: cryptoSerial too short (%d bytes)",
-                              serial, len(crypto))
+                _LOGGER.debug(
+                    "Skipping %s: cryptoSerial too short (%d bytes)",
+                    serial,
+                    len(crypto),
+                )
                 continue
             device_creds[serial] = {
                 "password": base64.b64decode(pw_b64),
@@ -69,8 +72,9 @@ def probe_candidate_ips(devices: Dict[str, dict],
     if not device_creds:
         return {}
 
-    _LOGGER.info("Probing %d candidate IPs for %d devices",
-                 len(candidate_ips), len(device_creds))
+    _LOGGER.info(
+        "Probing %d candidate IPs for %d devices", len(candidate_ips), len(device_creds)
+    )
 
     result = {}
     unmatched_serials = set(device_creds.keys())
@@ -81,24 +85,26 @@ def probe_candidate_ips(devices: Dict[str, dict],
 
         for serial in list(unmatched_serials):
             creds = device_creds[serial]
-            if _probe_ip(ip, creds, timeout):
+            if probe_ip(ip, creds, timeout):
                 result[serial] = ip
                 unmatched_serials.discard(serial)
                 _LOGGER.info("Matched %s -> %s", serial, ip)
                 break  # This IP is claimed; move to next IP
 
     if unmatched_serials:
-        _LOGGER.warning("Could not match %d/%d devices: %s",
-                        len(unmatched_serials), len(device_creds),
-                        list(unmatched_serials))
+        _LOGGER.warning(
+            "Could not match %d/%d devices: %s",
+            len(unmatched_serials),
+            len(device_creds),
+            list(unmatched_serials),
+        )
     else:
         _LOGGER.info("All %d devices matched to IPs", len(result))
 
     return result
 
 
-def _compute_token(password: bytes, crypto_serial: bytearray,
-                   post_data: bytes) -> str:
+def _compute_token(password: bytes, crypto_serial: bytearray, post_data: bytes) -> str:
     """Compute the auth token for a local API request.
 
     Replicates PyKumoBase._token() without needing a full instance.
@@ -117,23 +123,25 @@ def _compute_token(password: bytes, crypto_serial: bytearray,
     return hashlib.sha256(intermediate).hexdigest()
 
 
-def _probe_ip(ip: str, creds: dict, timeout: float) -> bool:
+def probe_ip(ip: str, creds: dict, timeout: float) -> bool:
     """Try a status query against an IP with given credentials.
 
     Returns True if the device responds with valid JSON containing expected
     fields (meaning the credentials match this device).
     """
     url = f"http://{ip}/api"
-    token = _compute_token(creds["password"], creds["crypto_serial"],
-                           _PROBE_QUERY)
+    token = _compute_token(creds["password"], creds["crypto_serial"], _PROBE_QUERY)
     headers = {
         "Accept": "application/json, text/plain, */*",
         "Content-Type": "application/json",
     }
     try:
         resp = requests.put(
-            url, headers=headers, data=_PROBE_QUERY,
-            params={"m": token}, timeout=timeout,
+            url,
+            headers=headers,
+            data=_PROBE_QUERY,
+            params={"m": token},
+            timeout=timeout,
         )
         if resp.ok:
             data = resp.json()
