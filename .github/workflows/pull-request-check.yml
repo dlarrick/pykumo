@@ -1,4 +1,4 @@
-name: Python Tests
+name: Pull request check
 
 on:
   push:
@@ -26,6 +26,11 @@ jobs:
         python -m pip install --upgrade pip
         pip install .
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+    - name: Run pre-commit
+      run: |
+        pip install pre-commit
+        pre-commit run --from-ref origin/master --to-ref HEAD
 
     - name: Run tests
       run: |
