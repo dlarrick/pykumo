@@ -476,8 +476,7 @@ class PyKumo(PyKumoBase):
         return val
 
     def get_runstate(self):
-        """Last retrieved runState, if any"""
-        """ True if unit has heat mode """
+        """Last retrieved runState, if any. True if unit has heat mode."""
         val = None
         try:
             val = self._profile["runState"]
@@ -494,7 +493,7 @@ class PyKumo(PyKumoBase):
         return val
 
     def get_defrost(self):
-        """Last retrieved filter status from unit"""
+        """Last retrieved defrost status from unit"""
         try:
             val = self._status["defrost"]
         except KeyError:

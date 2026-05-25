@@ -281,7 +281,7 @@ class PyKumoBase:
         return self._serial
 
     def get_sensor_rssi(self):
-        """Last retrievd sensor signal strength, if any"""
+        """Last retrieved sensor signal strength, if any"""
         val = None
         try:
             for sensor in self._sensors:
@@ -292,7 +292,7 @@ class PyKumoBase:
         return val
 
     def get_wifi_rssi(self):
-        """Last retrieved WiFi signal strengh, if any"""
+        """Last retrieved WiFi signal strength, if any"""
         val = None
         try:
             val = self._profile["wifiRSSI"]

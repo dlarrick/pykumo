@@ -209,42 +209,48 @@ class KumoCloudAccount:
         return self.try_setup(candidate_ips)
 
     def _extract_cached_units(self) -> dict:
-        """Extract fully-formed units from current kumo_dict."""
+        """Extract units from current kumo_dict, requiring only identity credentials."""
         units = {}
         if not self._kumo_dict:
             return units
-        fields = [
-            "serial",
-            "label",
-            "password",
-            "address",
-            "cryptoSerial",
-            "mac",
-            "unitType",
-        ]
+
+        required = ["serial", "password", "cryptoSerial"]
+        optional = ["label", "address", "mac", "unitType"]
+
         try:
             for child in self._kumo_dict[2]["children"]:
                 for raw_unit in child["zoneTable"].values():
                     saved_unit = {}
-                    for field in fields:
+                    # Always copy required fields
+                    for field in required:
                         if raw_unit.get(field):
                             saved_unit[field] = raw_unit[field]
-                    if all(field in saved_unit for field in fields):
+
+                    # Only copy optional if present, no need for truthy check
+                    for field in optional:
+                        saved_unit[field] = raw_unit.get(field, "")
+
+                    if all(field in saved_unit for field in required):
                         serial = saved_unit["serial"]
                         units[serial] = saved_unit
+
+                # Same logic for grandchildren if they exist
                 for grandchild in child.get("children", []):
                     for raw_unit in grandchild["zoneTable"].values():
                         saved_unit = {}
-                        for field in fields:
+                        for field in required:
                             if raw_unit.get(field):
                                 saved_unit[field] = raw_unit[field]
-                        if all(field in saved_unit for field in fields):
+                        for field in optional:
+                            saved_unit[field] = raw_unit.get(field, "")
+                        if all(field in saved_unit for field in required):
                             serial = saved_unit["serial"]
                             units[serial] = saved_unit
         except (KeyError, IndexError, TypeError):
             pass
+
         if units:
-            _LOGGER.info("Preserved %d fully cached units", len(units))
+            _LOGGER.info("Preserved %d cached units", len(units))
         return units
 
     def get_raw_json(self):
