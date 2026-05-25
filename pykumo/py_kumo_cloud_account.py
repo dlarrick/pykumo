@@ -169,11 +169,19 @@ class KumoCloudAccount:
                 len(to_discover),
             )
             ips_to_probe = list(candidate_ips.values())
+            ip_to_mac = {ip: mac for mac, ip in candidate_ips.items()}
             matched = probe_candidate_ips(to_discover, ips_to_probe)
             for serial, ip in matched.items():
                 final_units[serial]["address"] = ip
                 final_units[serial]["reachable"] = True
-                _LOGGER.info("Discovered %s -> %s", serial, ip)
+                if not final_units[serial].get("mac"):
+                    final_units[serial]["mac"] = ip_to_mac.get(ip, "")
+                _LOGGER.info(
+                    "Discovered %s -> %s (mac=%s)",
+                    serial,
+                    ip,
+                    final_units[serial]["mac"],
+                )
 
         # 6. Finalize & Preservation
         # Build _units map (only those with credentials)
