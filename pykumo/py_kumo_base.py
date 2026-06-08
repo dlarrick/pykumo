@@ -262,6 +262,19 @@ class PyKumoBase:
 
         return {}
 
+    def has_profile(self) -> bool:
+        """Return True if the unit profile has been populated from a successful poll.
+
+        The profile starts as an empty dict at construction and is populated after
+        the first successful ``update_status()`` call. Consumers (e.g. hass-kumo)
+        should call this before relying on capability methods such as
+        ``has_auto_mode()``, ``has_heat_mode()``, or ``get_fan_speeds()``:
+        those methods silently return defaults (``False`` / a fallback list) when
+        the profile is empty, which can cause incorrect behaviour if cached at
+        initialisation time while the adapter is temporarily offline.
+        """
+        return bool(self._profile)
+
     def get_status(self):
         """Last retrieved status dictionary from unit"""
         return self._status
