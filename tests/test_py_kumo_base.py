@@ -1,7 +1,6 @@
 """Tests for PyKumoBase.has_profile()."""
 
 import unittest
-from unittest.mock import MagicMock, patch
 
 from pykumo.py_kumo_base import PyKumoBase
 
