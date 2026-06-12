@@ -389,7 +389,7 @@ class PyKumo(PyKumoBase):
             )
 
         if speeds == 3:
-            valid_speeds = ["superQuiet", "quiet", "low", "powerful"]
+            valid_speeds = ["superQuiet", "quiet", "low", "powerful", "superPowerful"]
         elif speeds == 4:
             valid_speeds = ["quiet", "Low", "powerful", "superPowerful"]
         else:
