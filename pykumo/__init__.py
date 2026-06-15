@@ -7,7 +7,7 @@ from .py_kumo import PyKumo
 from .py_kumo_base import PyKumoBase
 from .py_kumo_station import PyKumoStation
 
-__version__ = "0.5.1"
+__version__ = "0.5.2"
 name = "pykumo"
 
 __all__ = [
