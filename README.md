@@ -89,6 +89,24 @@ If an indoor unit is reachable but returns error responses to legitimate command
 unit.do_reboot()
 ```
 
+### Use an external temperature sensor
+The WiFi adapter can source its room temperature reading from the API instead of a physical thermistor. This lets you use an external sensor of your choice as the unit's temperature input.
+
+```
+unit.set_temp_source('api')
+unit.set_injected_room_temp(18.5)
+```
+
+To restore the unit's own return-air sensor:
+```
+unit.set_temp_source('returnair')
+```
+
+Writes are applied asynchronously, so the response may have a stale value if queried immediately. Re-send the temperature periodically (roughly every 20 seconds) to keep it fresh. activeThermistor reports which temp source is currently in effect. If an updated temperature is not supplied for a while, the device automatically falls back to using the internal thermistor.
+
+
+Note that the temperature source setting persists across adapter reboots, so be sure to restore it when you're done.
+
 ### Query or Command an Indoor Unit Directly
 Indoor units speak a simple protocol of nested JSON. I'm not documenting the protocol here (though documentation patches would be welcome!), but if you look through the `pykumo.py` code for calls to `self._request` you can see the queries and commands that are already enabled. For example:
 ```

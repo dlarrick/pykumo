@@ -7,7 +7,7 @@ from collections.abc import MutableMapping
 
 from .schedule import UnitSchedule
 
-from .const import CACHE_INTERVAL_SECONDS, POSSIBLE_SENSORS
+from .const import CACHE_INTERVAL_SECONDS, POSSIBLE_SENSORS, SETTABLE_TEMP_SOURCES
 from .py_kumo_base import PyKumoBase
 
 _LOGGER = logging.getLogger(__name__)
@@ -194,9 +194,11 @@ class PyKumo(PyKumoBase):
                     "vaneDir",
                     "filterDirty",
                     "defrost",
+                    "tempSource",
+                    "activeThermistor",
                 ]
                 # Following not currently used:
-                # 'tempSource', 'activeThermistor', 'hotAdjust', 'runTest'
+                # 'hotAdjust', 'runTest'
                 response = self._retrieve_attributes(query, needed)
                 raw_status = response
                 try:
@@ -371,6 +373,24 @@ class PyKumo(PyKumoBase):
         """Last retrieved current temperature from unit"""
         try:
             val = self._status["roomTemp"]
+        except KeyError:
+            val = None
+        return val
+
+    def get_temp_source(self):
+        """Last retrieved temperature source from unit"""
+        try:
+            val = self._status["tempSource"]
+        except KeyError:
+            val = None
+        return val
+
+    def get_active_thermistor(self):
+        """Last retrieved active thermistor from unit. Reports 'api' while an
+        injected room temperature is live.
+        """
+        try:
+            val = self._status["activeThermistor"]
         except KeyError:
             val = None
         return val
@@ -660,6 +680,43 @@ class PyKumo(PyKumoBase):
         ).encode("utf-8")
         response = self._request(command)
         self._status["vaneDir"] = direction
+        self._last_status_update = time.monotonic() - 2 * CACHE_INTERVAL_SECONDS
+        return response
+
+    def set_temp_source(self, source):
+        """Change temperature source. Valid sources: sensor0-sensor3,
+        returnair, remote, api.
+        """
+        if source not in SETTABLE_TEMP_SOURCES:
+            _LOGGER.warning("Attempting to set invalid temp source %s", source)
+            return {}
+        command = (
+            '{"c": { "indoorUnit": { "status": { "tempSource": "%s" } } } }' % source
+        ).encode("utf-8")
+        response = self._request(command)
+        self._status["tempSource"] = source
+        self._last_status_update = time.monotonic() - 2 * CACHE_INTERVAL_SECONDS
+        return response
+
+    def set_injected_room_temp(self, temperature):
+        """Inject a room temperature for the unit to use.
+
+        Only used if tempSource is set to "api". The caller must re-send the value
+        periodically to prevent the system from ignoring it as stale.
+        """
+        temp_source = self.get_temp_source()
+        if temp_source != "api":
+            _LOGGER.warning(
+                "Ignoring injected room temp; tempSource is %s, not 'api'",
+                temp_source,
+            )
+            return {}
+        temperature = round(float(temperature), 1)
+        command = (
+            '{"c": { "indoorUnit": { "status": { "roomTemp": %.1f } } } }' % temperature
+        ).encode("utf-8")
+        response = self._request(command)
+        self._status["roomTemp"] = temperature
         self._last_status_update = time.monotonic() - 2 * CACHE_INTERVAL_SECONDS
         return response
 
