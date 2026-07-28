@@ -6,6 +6,12 @@ from .py_kumo_discovery import probe_candidate_ips
 from .py_kumo import PyKumo
 from .py_kumo_base import PyKumoBase
 from .py_kumo_station import PyKumoStation
+from .cn105 import (
+    DEFAULT_INFO_CODES,
+    InfoCode,
+    decode_info_reply,
+    valid_cn105_reply,
+)
 
 __version__ = "0.5.3"
 name = "pykumo"
@@ -17,4 +23,8 @@ __all__ = [
     "PyKumo",
     "PyKumoBase",
     "PyKumoStation",
+    "DEFAULT_INFO_CODES",
+    "InfoCode",
+    "decode_info_reply",
+    "valid_cn105_reply",
 ]
