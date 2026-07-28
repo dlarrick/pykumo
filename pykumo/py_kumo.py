@@ -8,6 +8,13 @@ from collections.abc import MutableMapping
 from .schedule import UnitSchedule
 
 from .const import CACHE_INTERVAL_SECONDS, POSSIBLE_SENSORS, SETTABLE_TEMP_SOURCES
+from .cn105 import (
+    DEFAULT_INFO_CODES,
+    TELEMETRY_KEYS,
+    CompressorActivityEstimator,
+    decode_info_reply,
+)
+from .cn105_bus import REPLY_TIMEOUT_SECONDS, Cn105Bus
 from .py_kumo_base import PyKumoBase
 
 _LOGGER = logging.getLogger(__name__)
@@ -50,6 +57,11 @@ class PyKumo(PyKumoBase):
         """Constructor"""
         self._last_reboot = None
         self._unit_schedule = UnitSchedule(self) if use_schedule else None
+        self._cn105 = Cn105Bus(self)
+        # What the last successful update_cn105_telemetry() read.
+        self._cn105_telemetry = {}
+        self._cn105_telemetry_at = None
+        self._compressor_activity = CompressorActivityEstimator()
         super().__init__(name, addr, cfg_json, timeouts, serial)
 
     def _rebootable_response(self, response):
@@ -731,6 +743,120 @@ class PyKumo(PyKumoBase):
         response = self._request(command)
         self._last_status_update = time.monotonic() - 2 * CACHE_INTERVAL_SECONDS
         return response
+
+    def get_cn105_bus(self) -> Cn105Bus:
+        """Return the raw frame interface, for other info codes and experiments."""
+        return self._cn105
+
+    def update_cn105_telemetry(
+        self, codes=None, timeout: float = REPLY_TIMEOUT_SECONDS
+    ) -> bool:
+        """Read fresh CN105 data. True if at least one code answered.
+
+        Asks for one info code at a time and caches what comes back, which is what
+        the ``get_*`` methods below return. This never raises. A code that fails
+        leaves its own fields None and the others alone.
+
+        ``codes`` defaults to :data:`~pykumo.cn105.DEFAULT_INFO_CODES` (``0x03``
+        and ``0x09``). Ask for ``InfoCode.COMPRESSOR`` (``0x06``) only on units you
+        know support it. On a unit that does not, it costs about 30 s to give up
+        and usually takes the codes after it in the same refresh down with it.
+
+        Waits for each reply, a few seconds per code, so call it from an executor
+        rather than an event loop.
+        """
+        answered = False
+        runtime_sample = None
+        for code in DEFAULT_INFO_CODES if codes is None else codes:
+            if code not in TELEMETRY_KEYS:
+                _LOGGER.warning(
+                    "%s: no CN105 fields known for info code 0x%02x", self._name, code
+                )
+                continue
+            self._cn105_telemetry.update(dict.fromkeys(TELEMETRY_KEYS[code]))
+            try:
+                reply = self._cn105.read_info(code, timeout=timeout)
+            except Exception:  # pylint: disable=broad-except
+                _LOGGER.warning(
+                    "%s: CN105 read for info code 0x%02x failed",
+                    self._name,
+                    code,
+                    exc_info=True,
+                )
+                continue
+            if reply is None:
+                continue
+            fields = decode_info_reply(reply, code)
+            self._cn105_telemetry.update(fields)
+            if "compressor_runtime_minutes" in fields:
+                # Time the counter when it was read, not when the whole refresh
+                # ends. A code that times out adds tens of seconds, which would
+                # otherwise make a fresh reading look far enough from the last
+                # one to be compared against it.
+                runtime_sample = (
+                    fields["compressor_runtime_minutes"],
+                    time.monotonic(),
+                )
+            answered = True
+        now = time.monotonic()
+        if answered:
+            self._cn105_telemetry_at = now
+        if runtime_sample is not None:
+            self._compressor_activity.update(*runtime_sample)
+        return answered
+
+    def get_cn105_telemetry(self) -> dict:
+        """Everything read on the last refresh.
+
+        ``operating`` holds whatever :meth:`is_compressor_running` reports, so it
+        is there even when info code ``0x06`` was not asked for. Empty until the
+        first refresh.
+        """
+        if not self._cn105_telemetry:
+            return {}
+        return {**self._cn105_telemetry, "operating": self.is_compressor_running()}
+
+    def get_cn105_telemetry_age(self) -> float | None:
+        """How many seconds ago the data came back, or None if it never has."""
+        if self._cn105_telemetry_at is None:
+            return None
+        return time.monotonic() - self._cn105_telemetry_at
+
+    def get_outdoor_temperature(self) -> float | None:
+        """Outdoor temperature in C, as of the last refresh.
+
+        The adapter reports this as null in its own status.
+        """
+        return self._cn105_telemetry.get("outdoor_temperature")
+
+    def get_raw_room_temperature(self) -> float | None:
+        """Room temperature in C as the unit itself measures it.
+
+        Not :meth:`get_current_temperature`, which uses whatever sensor the
+        adapter was told to use.
+        """
+        return self._cn105_telemetry.get("room_temperature")
+
+    def get_compressor_runtime_minutes(self) -> int | None:
+        """How many minutes the compressor has run, as of the last refresh.
+
+        This is compressor time, not power-on time.
+        """
+        return self._cn105_telemetry.get("compressor_runtime_minutes")
+
+    def is_compressor_running(self) -> bool | None:
+        """Whether the compressor is running, or None if we cannot tell.
+
+        Uses the ``0x06`` operating flag if you asked for that code. Otherwise it
+        infers the answer from the runtime counter, which needs two refreshes at
+        least 70 s apart and lags the real state by a minute or two.
+        """
+        operating = self._cn105_telemetry.get("operating")
+        if operating is not None:
+            return operating
+        if self.get_mode() in ("off", "idle"):
+            return False
+        return self._compressor_activity.running
 
     def do_reboot(self):
         """Issue a reboot command to the indoor unit's adapter."""
