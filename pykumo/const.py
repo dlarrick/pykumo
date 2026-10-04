@@ -11,6 +11,12 @@ S_PARAM = 0
 UNIT_CONNECT_TIMEOUT_SECONDS = 1.2
 UNIT_RESPONSE_TIMEOUT_SECONDS = 8.0
 
+# Minimum idle time to leave an adapter between the end of one request and
+# the start of the next, so a poll or a burst of commands doesn't hit it
+# back-to-back. Caps traffic to one adapter at roughly 1/interval requests
+# per second.
+UNIT_MIN_REQUEST_INTERVAL_SECONDS = 0.25
+
 # Default timeouts for interacting with the Kumo Cloud
 KUMO_CONNECT_TIMEOUT_SECONDS = 5
 KUMO_RESPONSE_TIMEOUT_SECONDS = 60

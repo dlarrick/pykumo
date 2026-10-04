@@ -355,9 +355,18 @@ class KumoCloudAccount:
 
         return None
 
-    def make_pykumos(self, timeouts=None, init_update_status=True, use_schedule=False):
+    def make_pykumos(
+        self,
+        timeouts=None,
+        init_update_status=True,
+        use_schedule=False,
+        min_request_interval=None,
+    ):
         """Return a dict mapping names of all indoor units to newly-created
         `PyKumoBase` objects
+
+        min_request_interval: minimum seconds between requests to each
+        adapter; None uses UNIT_MIN_REQUEST_INTERVAL_SECONDS, 0 disables.
         """
         kumos = {}
         for unitSerial in list(self.get_all_units()):
@@ -382,6 +391,7 @@ class KumoCloudAccount:
                 timeouts=timeouts,
                 serial=unitSerial,
                 use_schedule=use_schedule,
+                min_request_interval=min_request_interval,
             )
 
         if init_update_status:
