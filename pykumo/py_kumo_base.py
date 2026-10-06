@@ -6,6 +6,7 @@ import json
 import time
 import logging
 import threading
+from contextlib import contextmanager
 import requests
 from requests.adapters import HTTPAdapter
 from requests.exceptions import Timeout
@@ -170,6 +171,26 @@ class PyKumoBase:
         cycle explicitly.
         """
         self.end_cycle()
+
+    def _in_cycle(self) -> bool:
+        """True if this thread already has a connection open to this unit."""
+        return self._address in getattr(_tl, "cycles", set())
+
+    @contextmanager
+    def request_cycle(self):
+        """Keep one connection open for every request inside this block.
+
+        Safe to nest: an inner block joins the one its caller opened and leaves
+        closing it to that caller.
+        """
+        nested = self._in_cycle()
+        if not nested:
+            self.begin_cycle()
+        try:
+            yield
+        finally:
+            if not nested:
+                self.end_cycle()
 
     def _request(self, post_data):
         """Send request to configured unit and return response dict.
