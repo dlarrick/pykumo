@@ -13,9 +13,17 @@ class PyKumoStation(PyKumoBase):
 
     # pylint: disable=R0904, R0902
 
-    def __init__(self, name, addr, cfg_json, timeouts=None, serial=None):
+    def __init__(
+        self,
+        name,
+        addr,
+        cfg_json,
+        timeouts=None,
+        serial=None,
+        min_request_interval=None,
+    ):
         """Constructor"""
-        super().__init__(name, addr, cfg_json, timeouts, serial)
+        super().__init__(name, addr, cfg_json, timeouts, serial, min_request_interval)
 
     def update_status(self):
         """Retrieve and cache current status dictionary if enough time
