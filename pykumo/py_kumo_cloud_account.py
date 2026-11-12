@@ -66,6 +66,7 @@ class KumoCloudAccount:
             "cryptoSerial",
             "mac",
             "unitType",
+            "reachable",
         }
         # Not all fields are always present; e.g. 'address'
         common_fields = fields & raw_unit.keys()
@@ -215,7 +216,7 @@ class KumoCloudAccount:
             return units
 
         required = ["serial", "password", "cryptoSerial"]
-        optional = ["label", "address", "mac", "unitType"]
+        optional = ["label", "address", "mac", "unitType", "reachable"]
 
         try:
             for child in self._kumo_dict[2]["children"]:
@@ -256,6 +257,58 @@ class KumoCloudAccount:
     def get_raw_json(self):
         """Return raw dict retrieved from KumoCloud"""
         return self._kumo_dict
+
+    def get_zone_table(self) -> dict:
+        """Return cached zone table mapping serial -> unit dict."""
+        try:
+            return self._kumo_dict[2]["children"][0]["zoneTable"]
+        except (TypeError, KeyError, IndexError):
+            return {}
+
+    def get_unreachable_units(self) -> dict:
+        """Return dict of units (serial -> dict) that were unreachable during setup."""
+        return {
+            serial: unit
+            for serial, unit in self.get_zone_table().items()
+            if not unit.get("reachable")
+        }
+
+    def set_unit_address(self, serial: str, address: str) -> bool:
+        """Update the IP address and mark reachable for a unit."""
+        table = self.get_zone_table()
+        if serial in table:
+            table[serial]["address"] = address
+            table[serial]["reachable"] = True
+            if serial in self._units:
+                self._units[serial]["address"] = address
+                self._units[serial]["reachable"] = True
+            return True
+        return False
+
+    def rediscover_unreachable_units(self, candidate_ips: list[str]) -> dict[str, str]:
+        """Probe candidate IPs for currently unreachable units.
+
+        Updates internal unit address and zone table for any matched units.
+        Returns dict of {serial: new_ip} for any moved units.
+        """
+        unreachable = self.get_unreachable_units()
+        if not unreachable or not candidate_ips:
+            return {}
+
+        table = self.get_zone_table()
+        in_use = {u.get("address") for u in table.values() if u.get("reachable")}
+        ips = [ip for ip in candidate_ips if ip and ip not in in_use]
+        if not ips:
+            return {}
+
+        matched = probe_candidate_ips(unreachable, ips)
+        moved = {}
+        for serial, ip in matched.items():
+            if ip != unreachable[serial].get("address"):
+                self.set_unit_address(serial, ip)
+                moved[serial] = ip
+
+        return moved
 
     def get_all_units(self):
         """Return list of all unit serial numbers"""

@@ -394,6 +394,70 @@ class TestKumoCloudAccount(unittest.TestCase):
         # args[1] is candidate_ips.values() list
         self.assertIn("192.168.1.50", args[1])
 
+    @patch("pykumo.py_kumo_cloud_account.probe_ip")
+    @patch("pykumo.py_kumo_cloud_account.KumoCloudV3")
+    def test_zone_table_and_unreachable_units(self, mock_v3, mock_probe_ip):
+        """Test get_zone_table, get_unreachable_units, and set_unit_address."""
+        mock_probe_ip.return_value = False
+        v3_instance = mock_v3.return_value
+        v3_instance.get_all_device_credentials.return_value = {
+            "SERIAL1": {
+                "serial": "SERIAL1",
+                "label": "Unit 1",
+                "password": "cHcx",
+                "cryptoSerial": "0123456789ABCDEF01",
+                "mac": "mac1",
+                "unitType": "ductless",
+            }
+        }
+        account = KumoCloudAccount(
+            self.username, self.password, kumo_dict=self.cached_dict
+        )
+        account.try_setup()
+
+        zone_table = account.get_zone_table()
+        self.assertIn("SERIAL1", zone_table)
+
+        unreachable = account.get_unreachable_units()
+        self.assertIn("SERIAL1", unreachable)
+
+        self.assertTrue(account.set_unit_address("SERIAL1", "192.168.1.99"))
+        self.assertEqual(account.get_address("SERIAL1"), "192.168.1.99")
+        self.assertEqual(account.get_zone_table()["SERIAL1"]["address"], "192.168.1.99")
+        self.assertTrue(account.get_zone_table()["SERIAL1"]["reachable"])
+        self.assertEqual(len(account.get_unreachable_units()), 0)
+
+    @patch("pykumo.py_kumo_cloud_account.probe_candidate_ips")
+    @patch("pykumo.py_kumo_cloud_account.probe_ip")
+    @patch("pykumo.py_kumo_cloud_account.KumoCloudV3")
+    def test_rediscover_unreachable_units(
+        self, mock_v3, mock_probe_ip, mock_probe_candidate
+    ):
+        """Test rediscover_unreachable_units finds moved units and updates address."""
+        mock_probe_ip.return_value = False
+        v3_instance = mock_v3.return_value
+        v3_instance.get_all_device_credentials.return_value = {
+            "SERIAL1": {
+                "serial": "SERIAL1",
+                "label": "Unit 1",
+                "password": "cHcx",
+                "cryptoSerial": "0123456789ABCDEF01",
+                "mac": "mac1",
+                "unitType": "ductless",
+            }
+        }
+        account = KumoCloudAccount(
+            self.username, self.password, kumo_dict=self.cached_dict
+        )
+        account.try_setup()
+
+        mock_probe_candidate.return_value = {"SERIAL1": "192.168.1.77"}
+        moved = account.rediscover_unreachable_units(["192.168.1.77"])
+
+        self.assertEqual(moved, {"SERIAL1": "192.168.1.77"})
+        self.assertEqual(account.get_address("SERIAL1"), "192.168.1.77")
+        self.assertEqual(len(account.get_unreachable_units()), 0)
+
 
 if __name__ == "__main__":
     unittest.main()
