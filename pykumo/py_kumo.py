@@ -648,6 +648,29 @@ class PyKumo(PyKumoBase):
         self._last_status_update = time.monotonic() - 2 * CACHE_INTERVAL_SECONDS
         return response
 
+    def set_auto_setpoints(self, cool_setpoint, heat_setpoint):
+        """Change both setpoints for auto (heat/cool) mode in a single
+        command (in degrees C).
+
+        Sending spCool and spHeat in one request means the adapter applies
+        the pair together. Issuing them as two separate commands leaves a
+        window where only one has been applied, and if the second command
+        is lost (a failed request returns {} rather than raising) the unit
+        is left holding a mismatched pair indefinitely.
+        """
+        # TODO: honor min/max from profile
+        cool_setpoint = round(float(cool_setpoint), 2)
+        heat_setpoint = round(float(heat_setpoint), 1)
+        command = (
+            '{"c": { "indoorUnit": { "status": { "spCool": %f, "spHeat": %f } } } }'
+            % (cool_setpoint, heat_setpoint)
+        ).encode("utf-8")
+        response = self._request(command)
+        self._status["spCool"] = cool_setpoint
+        self._status["spHeat"] = heat_setpoint
+        self._last_status_update = time.monotonic() - 2 * CACHE_INTERVAL_SECONDS
+        return response
+
     def set_fan_speed(self, speed):
         """Change fan speed. Valid speeds: superQuiet, quiet, low, powerful,
         superPowerful, sometimes auto
